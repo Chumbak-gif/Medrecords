@@ -1,0 +1,41 @@
+{
+  "title": "Patients",
+  "createPatient": "Créer un patient",
+  "patientList": "Liste des patients",
+  "patientDetail": "Détails du patient",
+  "form": {
+    "firstName": "Prénom",
+    "lastName": "Nom de famille",
+    "dateOfBirth": "Date de naissance",
+    "gender": "Genre",
+    "contactNumber": "Numéro de contact",
+    "email": "E-mail",
+    "address": "Adresse",
+    "medicalRecordNumber": "Numéro de dossier médical"
+  },
+  "gender": {
+    "male": "Homme",
+    "female": "Femme",
+    "other": "Autre"
+  },
+  "table": {
+    "firstName": "Prénom",
+    "lastName": "Nom de famille",
+    "dateOfBirth": "Date de naissance",
+    "gender": "Genre",
+    "contact": "Contact",
+    "actions": "Actions"
+  },
+  "actions": {
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "messages": {
+    "created": "Patient créé avec succès",
+    "updated": "Patient mis à jour avec succès",
+    "deleted": "Patient supprimé avec succès",
+    "notFound": "Patient introuvable",
+    "noPatients": "Aucun patient trouvé"
+  }
+}

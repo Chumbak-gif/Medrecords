@@ -1,0 +1,32 @@
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Database — async SQLAlchemy + asyncpg driver + sync psycopg2 for Alembic
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Settings management
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.19
+
+# Scheduling (lock window automation)
+apscheduler==3.10.4
+
+# Excel import / export
+openpyxl==3.1.5
+
+# HTTP utilities
+httpx==0.28.0
+
+# Development / testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+httpx==0.28.0

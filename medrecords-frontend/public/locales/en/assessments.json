@@ -1,0 +1,37 @@
+{
+  "title": "Assessments",
+  "createAssessment": "New Assessment",
+  "assessmentList": "Assessment List",
+  "assessmentDetail": "Assessment Details",
+  "form": {
+    "patient": "Patient",
+    "disease": "Disease",
+    "template": "Template",
+    "status": "Status",
+    "submit": "Submit Assessment"
+  },
+  "status": {
+    "draft": "Draft",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "locked": "Locked"
+  },
+  "table": {
+    "id": "ID",
+    "patient": "Patient",
+    "status": "Status",
+    "created": "Created",
+    "actions": "Actions"
+  },
+  "actions": {
+    "view": "View",
+    "edit": "Edit",
+    "complete": "Complete"
+  },
+  "messages": {
+    "created": "Assessment created successfully",
+    "updated": "Assessment updated successfully",
+    "locked": "This assessment is locked and cannot be modified",
+    "noAssessments": "No assessments found"
+  }
+}

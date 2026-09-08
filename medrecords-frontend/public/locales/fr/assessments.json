@@ -1,0 +1,37 @@
+{
+  "title": "Évaluations",
+  "createAssessment": "Nouvelle évaluation",
+  "assessmentList": "Liste des évaluations",
+  "assessmentDetail": "Détails de l'évaluation",
+  "form": {
+    "patient": "Patient",
+    "disease": "Maladie",
+    "template": "Modèle",
+    "status": "Statut",
+    "submit": "Soumettre l'évaluation"
+  },
+  "status": {
+    "draft": "Brouillon",
+    "in_progress": "En cours",
+    "completed": "Terminé",
+    "locked": "Verrouillé"
+  },
+  "table": {
+    "id": "ID",
+    "patient": "Patient",
+    "status": "Statut",
+    "created": "Créé",
+    "actions": "Actions"
+  },
+  "actions": {
+    "view": "Voir",
+    "edit": "Modifier",
+    "complete": "Terminer"
+  },
+  "messages": {
+    "created": "Évaluation créée avec succès",
+    "updated": "Évaluation mise à jour avec succès",
+    "locked": "Cette évaluation est verrouillée et ne peut pas être modifiée",
+    "noAssessments": "Aucune évaluation trouvée"
+  }
+}

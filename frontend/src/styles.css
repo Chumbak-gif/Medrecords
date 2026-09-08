@@ -1,0 +1,1173 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ══════════════════════════════════════════════════════════════
+   MEDRECORDS DESIGN SYSTEM — Design Tokens
+   Healthcare Blue/Teal Palette (hue 189°)
+   ══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ── Brand Colors (Primary — Healthcare Blue/Teal, hue 189°) ── */
+    --color-primary:      #06b6d4;
+    --color-primary-50:   #ecfeff;
+    --color-primary-100:  #cffafe;
+    --color-primary-200:  #a5f3fc;
+    --color-primary-300:  #67e8f9;
+    --color-primary-400:  #22d3ee;
+    --color-primary-500:  #06b6d4;
+    --color-primary-600:  #0891b2;
+    --color-primary-700:  #0e7490;
+    --color-primary-800:  #155e75;
+    --color-primary-900:  #164e63;
+
+    /* ── Secondary/Accent Color ── */
+    --color-secondary:    #8b5cf6;
+
+    /* ── Neutral Scale (0–900) ── */
+    --color-neutral-0:    #ffffff;
+    --color-neutral-50:   #f8fafc;
+    --color-neutral-100:  #f1f5f9;
+    --color-neutral-200:  #e2e8f0;
+    --color-neutral-300:  #cbd5e1;
+    --color-neutral-400:  #94a3b8;
+    --color-neutral-500:  #64748b;
+    --color-neutral-600:  #475569;
+    --color-neutral-700:  #334155;
+    --color-neutral-800:  #1e293b;
+    --color-neutral-900:  #0f172a;
+
+    /* ── Semantic Colors ── */
+    --color-success:      #10b981;
+    --color-success-bg:   #ecfdf5;
+    --color-success-text: #065f46;
+
+    --color-warning:      #f59e0b;
+    --color-warning-bg:   #fffbeb;
+    --color-warning-text: #92400e;
+
+    --color-error:        #ef4444;
+    --color-error-bg:     #fef2f2;
+    --color-error-text:   #991b1b;
+
+    --color-info:         #3b82f6;
+    --color-info-bg:      #eff6ff;
+    --color-info-text:    #1e40af;
+
+    /* ── Surface Tokens ── */
+    --surface-background: #f8fafc;
+    --surface-card:       #ffffff;
+    --surface-elevated:   #ffffff;
+    --surface-overlay:    rgba(0, 0, 0, 0.45);
+
+    /* ── Spacing (4px base unit) ── */
+    --space-1:  4px;
+    --space-2:  8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-5:  20px;
+    --space-6:  24px;
+    --space-8:  32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* ── Typography ── */
+    --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --text-xs:  11px;
+    --text-sm:  12px;
+    --text-base: 14px;
+    --text-md:  16px;
+    --text-lg:  18px;
+    --text-xl:  20px;
+    --text-2xl: 24px;
+
+    --leading-tight:   1.25;
+    --leading-normal:  1.5;
+    --leading-relaxed: 1.75;
+
+    --font-light:    300;
+    --font-regular:  400;
+    --font-medium:   500;
+    --font-semibold: 600;
+    --font-bold:     700;
+
+    /* ── Border Radius ── */
+    --radius-sm:   4px;
+    --radius-md:   8px;
+    --radius-lg:   12px;
+    --radius-xl:   16px;
+    --radius-full: 9999px;
+
+    /* ── Elevation / Shadows ── */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+    /* ── Motion ── */
+    --duration-fast:   150ms;
+    --duration-normal: 250ms;
+    --duration-slow:   400ms;
+    --ease-out:    cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* ── Layout ── */
+    --topbar-height:  56px;
+    --sidenav-width:  240px;
+    --sidenav-width-collapsed: 64px;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     Dark Mode Token Overrides
+     Surface lightness < 20%, text lightness > 80%
+     All pairs meet WCAG AA (4.5:1 normal text, 3:1 large text)
+     ══════════════════════════════════════════════════════════════ */
+  [data-theme="dark"] {
+    /* ── Surface Tokens (lightness < 20%) ── */
+    --surface-background: #0f1419;   /* hsl(210, 24%, 8%)  */
+    --surface-card:       #1a2027;   /* hsl(210, 18%, 13%) */
+    --surface-elevated:   #242d35;   /* hsl(210, 16%, 17%) */
+    --surface-overlay:    rgba(0, 0, 0, 0.6);
+
+    /* ── Neutral Scale (inverted for dark backgrounds) ── */
+    --color-neutral-0:    #0f1419;   /* darkest — page bg  */
+    --color-neutral-50:   #1a2027;   /* card bg            */
+    --color-neutral-100:  #242d35;   /* elevated bg        */
+    --color-neutral-200:  #2e3a44;   /* subtle borders     */
+    --color-neutral-300:  #3d4f5f;   /* borders            */
+    --color-neutral-400:  #64748b;   /* placeholder text   */
+    --color-neutral-500:  #94a3b8;   /* secondary text     */
+    --color-neutral-600:  #cbd5e1;   /* label text         */
+    --color-neutral-700:  #e2e8f0;   /* body text          */
+    --color-neutral-800:  #f1f5f9;   /* headings           */
+    --color-neutral-900:  #f8fafc;   /* primary text       */
+
+    /* ── Brand Colors (adjusted for dark mode contrast) ── */
+    --color-primary:      #22d3ee;   /* lighter cyan — 7.5:1 on #0f1419 */
+    --color-primary-50:   #083344;   /* dark tint for hover bg         */
+    --color-primary-100:  #0c4a5e;   /* focus ring bg                  */
+    --color-primary-200:  #155e75;   /* decorative dark accents        */
+    --color-primary-300:  #0e7490;   /* active states                  */
+    --color-primary-400:  #06b6d4;   /* standard primary (dark bg)     */
+    --color-primary-500:  #22d3ee;   /* dark mode brand primary        */
+    --color-primary-600:  #67e8f9;   /* hover states                   */
+    --color-primary-700:  #a5f3fc;   /* light accents                  */
+    --color-primary-800:  #cffafe;   /* subtle highlights              */
+    --color-primary-900:  #ecfeff;   /* very light on dark             */
+
+    /* ── Secondary/Accent Color ── */
+    --color-secondary:    #a78bfa;   /* lighter purple for dark bg     */
+
+    /* ── Semantic Colors (adjusted for dark backgrounds) ── */
+    --color-success:      #34d399;   /* brighter green — 5.6:1 on #1a2027 */
+    --color-success-bg:   #064e3b;   /* dark green background             */
+    --color-success-text: #6ee7b7;   /* light green text — 8.2:1 on #064e3b */
+
+    --color-warning:      #fbbf24;   /* brighter amber — 9.8:1 on #1a2027 */
+    --color-warning-bg:   #451a03;   /* dark amber background             */
+    --color-warning-text: #fcd34d;   /* light amber text — 9.1:1 on #451a03 */
+
+    --color-error:        #f87171;   /* brighter red — 5.0:1 on #1a2027   */
+    --color-error-bg:     #450a0a;   /* dark red background               */
+    --color-error-text:   #fca5a5;   /* light red text — 7.3:1 on #450a0a */
+
+    --color-info:         #60a5fa;   /* brighter blue — 5.4:1 on #1a2027  */
+    --color-info-bg:      #1e3a5f;   /* dark blue background              */
+    --color-info-text:    #93c5fd;   /* light blue text — 6.8:1 on #1e3a5f */
+
+    /* ── Elevation / Shadows (darker, more pronounced) ── */
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Global Base Styles
+   ══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--color-neutral-900);
+    background-color: var(--surface-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a { color: var(--color-primary); text-decoration: none; }
+
+  /* Custom scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-neutral-100); }
+  ::-webkit-scrollbar-thumb { background: var(--color-neutral-400); border-radius: var(--radius-full); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+  /* ── Global focus-visible styles ── */
+  :root *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* ── Suppress focus ring for mouse clicks ── */
+  :root *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Reduced Motion Support
+   ══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Component Classes
+   ══════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Buttons ── */
+
+  /* Base button — shared structure for all variants */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+    font-weight: var(--font-semibold);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+    /* Default to medium size */
+    min-height: var(--space-10);
+    padding: var(--space-2) var(--space-5);
+    font-size: var(--text-base);
+    border: none;
+    text-decoration: none;
+    line-height: var(--leading-tight);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .btn:disabled,
+  .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn:disabled:hover,
+  .btn[disabled]:hover,
+  .btn:disabled:active,
+  .btn[disabled]:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Variant: Primary — filled, brand color */
+  .btn-primary {
+    color: var(--color-neutral-0);
+    background-color: var(--color-primary);
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-600);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-primary:active {
+    background-color: var(--color-primary-700);
+  }
+
+  .btn-primary:disabled:hover,
+  .btn-primary[disabled]:hover {
+    background-color: var(--color-primary);
+    box-shadow: none;
+  }
+
+  /* Variant: Secondary — outlined */
+  .btn-secondary {
+    color: var(--color-neutral-800);
+    background-color: transparent;
+    border: 1.5px solid var(--color-neutral-300);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-secondary:active {
+    background-color: var(--color-primary-50);
+  }
+
+  .btn-secondary:disabled:hover,
+  .btn-secondary[disabled]:hover {
+    border-color: var(--color-neutral-300);
+    color: var(--color-neutral-800);
+    box-shadow: none;
+  }
+
+  /* Variant: Danger — filled, error color */
+  .btn-danger {
+    color: var(--color-neutral-0);
+    background-color: var(--color-error);
+    border: none;
+  }
+
+  .btn-danger:hover {
+    background-color: var(--color-error-text);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-danger:active {
+    background-color: var(--color-error-text);
+  }
+
+  .btn-danger:disabled:hover,
+  .btn-danger[disabled]:hover {
+    background-color: var(--color-error);
+    box-shadow: none;
+  }
+
+  /* Variant: Ghost — text-only */
+  .btn-ghost {
+    color: var(--color-primary);
+    background-color: transparent;
+    border: none;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--color-primary-50);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-ghost:active {
+    background-color: var(--color-primary-100);
+  }
+
+  .btn-ghost:disabled:hover,
+  .btn-ghost[disabled]:hover {
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  /* Size: Small — 32px height, 12px font */
+  .btn-sm {
+    min-height: var(--space-8);
+    padding: var(--space-1) var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  /* Size: Medium — 40px height, 14px font (default, explicit class) */
+  .btn-md {
+    min-height: var(--space-10);
+    padding: var(--space-2) var(--space-5);
+    font-size: var(--text-base);
+  }
+
+  /* Size: Large — 48px height, 16px font */
+  .btn-lg {
+    min-height: var(--space-12);
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-md);
+  }
+
+  /* ── Form Controls ── */
+
+  /*
+   * Form field wrapper — positions label above input and holds error messages.
+   * Usage pattern (for/id pairing — Requirement 8.6):
+   *   <div class="form-field">
+   *     <label class="form-label" for="patient-name">Patient Name</label>
+   *     <input class="form-control" id="patient-name" />
+   *   </div>
+   *
+   * Error state pattern (aria-describedby — Requirement 14.7):
+   *   <div class="form-field">
+   *     <label class="form-label" for="email">Email</label>
+   *     <input class="form-control form-control--error" id="email"
+   *            aria-describedby="email-error" aria-invalid="true" />
+   *     <span class="form-error" id="email-error" role="alert" aria-live="polite">
+   *       Please enter a valid email address
+   *     </span>
+   *   </div>
+   */
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  /* Label — 12px, weight 600, neutral-600, positioned above input */
+  .form-label {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-neutral-600);
+    line-height: var(--leading-normal);
+  }
+
+  /* Backward-compatible alias */
+  .label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-neutral-600);
+    margin-bottom: 6px;
+  }
+
+  /* Input — min-height 40px, border-radius radius-md (8px), border 1.5px, font-size 14px */
+  .input, .form-control {
+    width: 100%;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--color-neutral-900);
+    background: var(--surface-card);
+    border: 1.5px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    min-height: 40px;
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+  }
+  .input:hover, .form-control:hover {
+    border-color: var(--color-neutral-400);
+  }
+
+  /* Focus state: brand primary border + 3px spread ring */
+  .input:focus, .form-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+  }
+
+  /* Disabled state: neutral-100 background, reduced text opacity */
+  .input:disabled, .form-control:disabled {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-900);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Error state: semantic error border */
+  .form-control--error,
+  .form-control--error:hover,
+  .form-control--error:focus {
+    border-color: var(--color-error);
+  }
+  .form-control--error:focus {
+    box-shadow: 0 0 0 3px var(--color-error-bg);
+  }
+
+  /* Error message: semantic error color, small text */
+  .form-error {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-error);
+    line-height: var(--leading-normal);
+    margin-top: var(--space-1);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-neutral-200);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5) var(--space-6);
+  }
+
+  /* ── Page Header ── */
+  .page-header {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-neutral-200);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5) var(--space-6);
+    margin-bottom: var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── Status Badges ── */
+  /* Base badge structure — shared by all badge utility classes */
+  [class^="badge-"], [class*=" badge-"] {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: var(--radius-full);
+    font-size: 11px; font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  /* Success variants: active, approved, completed, paid, compliance */
+  .badge-active, .badge-approved, .badge-completed, .badge-paid, .badge-compliance {
+    background: var(--color-success-bg); color: var(--color-success-text);
+  }
+
+  /* Warning variants: pending, under-review, overdue, doctor-pending */
+  .badge-pending, .badge-under-review, .badge-overdue, .badge-doctor-pending {
+    background: var(--color-warning-bg); color: var(--color-warning-text);
+  }
+
+  /* Error variants: rejected, expired */
+  .badge-rejected, .badge-expired {
+    background: var(--color-error-bg); color: var(--color-error-text);
+  }
+
+  /* Info variants: draft, submitted, info, agreement, finance */
+  .badge-draft, .badge-submitted, .badge-info, .badge-agreement, .badge-finance {
+    background: var(--color-info-bg); color: var(--color-info-text);
+  }
+
+  /* Neutral variants: inactive, default */
+  .badge-inactive, .badge-default {
+    background: var(--color-neutral-100); color: var(--color-neutral-600);
+  }
+
+  /* ── Section Title ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-neutral-500);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-neutral-200);
+  }
+
+  /* ── KPI Cards ── */
+  .kpi-card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5);
+    border: 1px solid var(--color-neutral-200);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 84px;
+    transition: all var(--duration-normal) var(--ease-spring);
+  }
+  .kpi-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  /* ── Data Table Utilities ── */
+
+  /* Horizontal scroll wrapper — contains tables when content exceeds available width (Req 18.4) */
+  .data-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Empty state — centered message/illustration shown when a table has no data (Req 10.6) */
+  .data-table-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-10) var(--space-4);
+    text-align: center;
+    color: var(--color-neutral-500);
+    font-size: var(--text-base);
+    gap: var(--space-3);
+  }
+
+  /* ── Alerts ── */
+  .alert-success { background: rgba(23,199,101,.08); border-left: 4px solid #15803d; color: #15803d; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: 13px; }
+  .alert-warning { background: rgba(255,162,30,.08); border-left: 4px solid #b45309; color: #b45309; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: 13px; }
+  .alert-error   { background: rgba(239,68,68,.08); border-left: 4px solid #b91c1c; color: #b91c1c; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: 13px; }
+  .alert-info    { background: rgba(59,130,246,.08); border-left: 4px solid #1d4ed8; color: #1d4ed8; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: 13px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Utility Classes
+   ══════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .text-muted   { color: var(--color-neutral-500); }
+  .text-sm      { font-size: 12px; }
+  .text-xs      { font-size: 11px; }
+  .fw-600       { font-weight: 600; }
+  .fw-700       { font-weight: 700; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Animations
+   ══════════════════════════════════════════════════════════════ */
+
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-14deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-8deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialogEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Dialog Entry Animation & Scrollable Content
+   PrimeNG p-dialog enhancements not covered by the theme file.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Entry animation: scale + translate on open (250ms duration-normal) */
+:root .p-dialog {
+  animation: dialogEnter var(--duration-normal) var(--ease-out) forwards;
+}
+
+/* Scrollable dialog content — auto overflow for long content */
+:root .p-dialog .p-dialog-content {
+  overflow-y: auto;
+  max-height: 65vh;
+}
+
+/* Dialog content area custom scrollbar styling */
+:root .p-dialog .p-dialog-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+:root .p-dialog .p-dialog-content::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-full);
+}
+
+:root .p-dialog .p-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/*
+ * Dialog Accessibility (aria-labelledby / aria-describedby):
+ *
+ * PrimeNG `p-dialog` automatically sets `aria-labelledby` pointing to
+ * the dialog title element when the `header` input is provided.
+ *
+ * To add `aria-describedby` for dialogs with a description:
+ *   <p-dialog [ariaDescribedBy]="'dialog-desc-id'" ...>
+ *     <p id="dialog-desc-id">Description text here</p>
+ *   </p-dialog>
+ *
+ * For custom headers using ng-template pTemplate="header":
+ *   <p-dialog [ariaLabelledBy]="'custom-title-id'" ...>
+ *     <ng-template pTemplate="header">
+ *       <h2 id="custom-title-id">Title</h2>
+ *     </ng-template>
+ *   </p-dialog>
+ */
+
+/* ══════════════════════════════════════════════════════════════
+   Global Button Rounding Override
+   Ensures ALL buttons throughout the app use consistent pill shape.
+   ══════════════════════════════════════════════════════════════ */
+
+/* All .btn-primary and .btn-secondary used inline in components */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-base);
+  padding: 9px 20px;
+  border-radius: var(--radius-full) !important;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  border: 1.5px solid transparent;
+  line-height: 1.4;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--surface-card);
+  color: var(--color-neutral-700);
+  border-color: var(--color-neutral-300);
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: #fff;
+  border-color: var(--color-error);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-error-text);
+  border-color: var(--color-error-text);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-primary-50);
+}
+
+/* Small button modifier */
+.btn-sm {
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+}
+
+/* PrimeNG button rounding — icon buttons and text buttons */
+.p-button,
+.p-button.p-button-text,
+.p-button.p-button-outlined {
+  border-radius: var(--radius-full) !important;
+}
+
+/* PrimeNG icon-only buttons (action columns) — consistent circular style */
+.p-button.p-button-icon-only {
+  border-radius: 50% !important;
+  width: 34px !important;
+  height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  aspect-ratio: 1 / 1 !important;
+  line-height: 1 !important;
+}
+
+/* Action icon buttons: unified subtle style with teal/blue theme */
+.p-button.p-button-text.p-button-secondary.p-button-icon-only,
+.p-button.p-button-text.p-button-danger.p-button-icon-only,
+.p-button.p-button-text.p-button-warning.p-button-icon-only,
+.p-button.p-button-text.p-button-success.p-button-icon-only,
+.p-button.p-button-text.p-button-icon-only {
+  background: var(--color-neutral-100) !important;
+  color: var(--color-neutral-600) !important;
+  border: 1px solid var(--color-neutral-200) !important;
+  border-radius: 50% !important;
+  width: 34px !important;
+  height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  aspect-ratio: 1 / 1 !important;
+  line-height: 1 !important;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.p-button.p-button-text.p-button-secondary.p-button-icon-only .p-button-icon,
+.p-button.p-button-text.p-button-danger.p-button-icon-only .p-button-icon,
+.p-button.p-button-text.p-button-warning.p-button-icon-only .p-button-icon,
+.p-button.p-button-text.p-button-success.p-button-icon-only .p-button-icon,
+.p-button.p-button-text.p-button-icon-only .p-button-icon {
+  margin: 0 !important;
+  font-size: 14px;
+}
+
+.p-button.p-button-text.p-button-secondary.p-button-icon-only:hover,
+.p-button.p-button-text.p-button-danger.p-button-icon-only:hover,
+.p-button.p-button-text.p-button-warning.p-button-icon-only:hover,
+.p-button.p-button-text.p-button-success.p-button-icon-only:hover,
+.p-button.p-button-text.p-button-icon-only:hover {
+  background: var(--color-primary-50) !important;
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary-200) !important;
+}
+
+/* Danger icon button: subtle red on hover only */
+.p-button.p-button-text.p-button-danger.p-button-icon-only:hover {
+  background: var(--color-error-bg) !important;
+  color: var(--color-error) !important;
+  border-color: #fecaca !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PrimeNG Dark Mode & Theme Consistency Overrides
+   ══════════════════════════════════════════════════════════════ */
+
+/* PrimeNG form controls: respect dark mode surface tokens */
+.p-dropdown,
+.p-multiselect,
+.p-calendar .p-inputtext,
+.p-inputtext,
+.p-select {
+  background: var(--surface-card) !important;
+  color: var(--color-neutral-900) !important;
+  border: 1.5px solid var(--color-neutral-300) !important;
+  border-radius: var(--radius-md) !important;
+  min-height: 40px;
+}
+
+.p-dropdown:hover,
+.p-multiselect:hover,
+.p-inputtext:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.p-dropdown:focus-within,
+.p-multiselect:focus-within,
+.p-inputtext:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+}
+
+/* PrimeNG dropdown label text */
+.p-dropdown .p-dropdown-label,
+.p-multiselect .p-multiselect-label {
+  color: var(--color-neutral-900) !important;
+  padding: 8px 12px !important;
+}
+
+/* Placeholder styling */
+.p-dropdown .p-dropdown-label.p-placeholder,
+.p-multiselect .p-multiselect-label.p-placeholder {
+  color: var(--color-neutral-400) !important;
+}
+
+/* PrimeNG dropdown trigger arrow */
+.p-dropdown .p-dropdown-trigger,
+.p-multiselect .p-multiselect-trigger {
+  color: var(--color-neutral-500) !important;
+  width: 2.5rem !important;
+}
+
+/* PrimeNG panels/overlays */
+.p-dropdown-panel,
+.p-multiselect-panel,
+.p-datepicker-panel,
+.p-autocomplete-panel {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--color-neutral-200) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Dropdown/multiselect items */
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item,
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+  color: var(--color-neutral-800) !important;
+  padding: 10px 14px !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover,
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item:hover {
+  background: var(--color-primary-50) !important;
+  color: var(--color-primary) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight,
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+  background: var(--color-primary-50) !important;
+  color: var(--color-primary) !important;
+}
+
+/* PrimeNG multiselect: clean dropdown appearance */
+
+/* ── PrimeNG 17 Multiselect: single clean label display ── */
+
+/* Hide the inline filter input that PrimeNG renders inside the multiselect */
+.p-multiselect input.p-element,
+.p-multiselect input.p-multiselect-filter,
+.p-multiselect .p-hidden-accessible + input,
+.p-multiselect > div > input[role="combobox"] {
+  display: none !important;
+}
+
+/* Hide chip tokens */
+.p-multiselect .p-multiselect-token,
+.p-multiselect .p-chip {
+  display: none !important;
+}
+
+/* Hide the clear "X" button */
+.p-multiselect .p-multiselect-clear-icon {
+  display: none !important;
+}
+
+/* Ensure label fills the space properly */
+.p-multiselect .p-multiselect-label-container {
+  flex: 1 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+.p-multiselect .p-multiselect-label {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 8px 12px !important;
+}
+
+.p-multiselect .p-multiselect-trigger {
+  flex-shrink: 0 !important;
+}
+
+/* Hide duplicate "select all" header checkbox */
+.p-multiselect-panel .p-multiselect-header {
+  display: none !important;
+}
+
+/* Multiselect label — show as clean text */
+.p-multiselect-label-container {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.p-multiselect-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Multiselect panel items — proper alignment */
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 14px !important;
+}
+
+/* Checkbox inside multiselect items */
+.p-multiselect-panel .p-multiselect-item .p-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  flex-shrink: 0;
+}
+
+.p-multiselect-panel .p-multiselect-item .p-checkbox .p-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+  border: 1.5px solid var(--color-neutral-300) !important;
+  background: var(--surface-card) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.p-multiselect-panel .p-multiselect-item.p-highlight .p-checkbox .p-checkbox-box {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Close button in multiselect panel */
+.p-multiselect-panel .p-multiselect-close {
+  color: var(--color-neutral-500) !important;
+}
+
+/* Filter input inside multiselect panel */
+.p-multiselect-panel .p-multiselect-filter-container .p-inputtext {
+  background: var(--surface-card) !important;
+  border: 1.5px solid var(--color-neutral-300) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--color-neutral-900) !important;
+  padding: 8px 12px !important;
+}
+
+/* PrimeNG calendar input */
+.p-calendar {
+  width: 100% !important;
+}
+
+.p-calendar .p-inputtext {
+  width: 100% !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PrimeNG Dialog & Confirm Dialog Consistency
+   ══════════════════════════════════════════════════════════════ */
+
+/* Dialog overall */
+.p-dialog {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  background: var(--surface-card) !important;
+  border: 1px solid var(--color-neutral-200) !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: var(--surface-card) !important;
+  border-bottom: 1px solid var(--color-neutral-200) !important;
+  padding: 16px 20px !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-title {
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  color: var(--color-neutral-900) !important;
+}
+
+.p-dialog .p-dialog-content {
+  background: var(--surface-card) !important;
+  padding: 20px !important;
+  color: var(--color-neutral-800) !important;
+}
+
+.p-dialog .p-dialog-footer {
+  background: var(--surface-card) !important;
+  border-top: 1px solid var(--color-neutral-200) !important;
+  padding: 12px 20px !important;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+/* Confirm dialog buttons — consistent pill style */
+.p-confirm-dialog .p-dialog-footer .p-button,
+.p-dialog .p-dialog-footer .p-button {
+  border-radius: var(--radius-full) !important;
+  padding: 9px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* "No" / reject button — outlined secondary */
+.p-confirm-dialog .p-dialog-footer .p-button.p-confirm-dialog-reject,
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-confirm-dialog-accept) {
+  background: var(--surface-card) !important;
+  color: var(--color-neutral-700) !important;
+  border: 1.5px solid var(--color-neutral-300) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-confirm-dialog-reject:hover {
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+/* "Yes" / accept button — primary filled (teal, NOT red) */
+.p-confirm-dialog .p-dialog-footer .p-button.p-confirm-dialog-accept {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border: 1.5px solid var(--color-primary) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-confirm-dialog-accept:hover {
+  background: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}
+
+/* Danger accept button (for delete confirmations) */
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger {
+  background: var(--color-error) !important;
+  color: #fff !important;
+  border: 1.5px solid var(--color-error) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+  background: var(--color-error-text) !important;
+  border-color: var(--color-error-text) !important;
+}
+
+/* Dialog overlay */
+.p-dialog-mask {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PrimeNG Theme Overrides
+   Moved to styles/primeng-theme.css (token-based, zero !important)
+   ══════════════════════════════════════════════════════════════ */

@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "MEDRecords",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "noResults": "No results found",
+    "confirm": "Confirm",
+    "back": "Back"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "patients": "Patients",
+    "assessments": "Assessments",
+    "reports": "Reports",
+    "audit": "Audit Log",
+    "users": "Users",
+    "settings": "Settings",
+    "signOut": "Sign Out"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{current}} of {{total}}"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "maxLength": "Must be at most {{max}} characters",
+    "minLength": "Must be at least {{min}} characters"
+  }
+}
