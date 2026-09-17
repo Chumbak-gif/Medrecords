@@ -33,7 +33,7 @@
     "dompurify": "^3.2.3",
     "i18next": "^24.2.2",
     "i18next-browser-languagedetector": "^8.0.4",
-    "i18next-http-backend": "^2.7.1",
+    "i18next-http-backend": "^4.0.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "postcss": "^8.5.16",
@@ -47,7 +47,7 @@
     "react-router-dom": "^7.1.1",
     "tailwindcss": "^3.4.19",
     "web-vitals": "^5.3.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "file:./vendor/xlsx-0.20.3.tgz",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -61,7 +61,7 @@
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
@@ -71,6 +71,6 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.1"
   }
 }
