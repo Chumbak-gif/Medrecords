@@ -16,6 +16,12 @@ from src.domain.repositories.user_repository import UserRepository
 class GetKpisQuery:
     """Input for retrieving analytics KPIs."""
 
+    from_date: Optional[date] = None
+    to_date: Optional[date] = None
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -42,6 +48,10 @@ class MonthlyVolumeItem:
 class GetMonthlyVolumeQuery:
     """Input for monthly volume retrieval."""
 
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -59,6 +69,10 @@ class GetByDiseaseQuery:
 
     from_date: Optional[date] = None
     to_date: Optional[date] = None
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -76,6 +90,10 @@ class GetTrendQuery:
 
     from_date: Optional[date] = None
     to_date: Optional[date] = None
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -97,6 +115,10 @@ class GetDiseaseSummaryQuery:
     from_date: Optional[date] = None
     to_date: Optional[date] = None
     disease_id: Optional[int] = None
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -140,6 +162,10 @@ class GetPatientStatisticsQuery:
     """Input for patient statistics."""
 
     disease_id: Optional[int] = None
+    disease_ids: Optional[list[int]] = None
+    doctor_ids: Optional[list[int]] = None
+    age_group: Optional[str] = None
+    gender: Optional[str] = None
     actor: Optional[UserEntity] = None
 
 
@@ -166,16 +192,63 @@ class GetAnalyticsUseCase:
         return None
 
     async def get_kpis(self, query: GetKpisQuery) -> KpisResult:
-        """Retrieve dashboard KPIs — scoped to the doctor's own data when actor is a doctor."""
+        """Retrieve dashboard KPIs — scoped to the doctor's own data when actor
+        is a doctor, and further filtered by date range / disease / doctor /
+        age group / gender when provided."""
         now = datetime.now(tz=timezone.utc)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         doctor_id = self._doctor_scope(query.actor)
 
+        from_dt = (
+            datetime(query.from_date.year, query.from_date.month, query.from_date.day, tzinfo=timezone.utc)
+            if query.from_date else None
+        )
+        to_dt = (
+            datetime(query.to_date.year, query.to_date.month, query.to_date.day, 23, 59, 59, tzinfo=timezone.utc)
+            if query.to_date else None
+        )
+        has_extra_filters = bool(
+            query.from_date or query.to_date or query.disease_ids or query.doctor_ids
+            or query.age_group or query.gender
+        )
+
         if doctor_id is not None:
-            total_assessments = await self._assessment_repo.count(doctor_id=doctor_id)
-            this_month_assessments = await self._assessment_repo.count_since(month_start, doctor_id=doctor_id)
-            active_patients = await self._assessment_repo.count_distinct_patients(doctor_id=doctor_id)
+            # Doctor view: always scoped to their own assessments, further
+            # narrowed by any additional filters they've applied.
+            total_assessments = await self._assessment_repo.count_filtered(
+                doctor_id=doctor_id, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=from_dt, to_date=to_dt,
+            )
+            this_month_assessments = await self._assessment_repo.count_filtered(
+                doctor_id=doctor_id, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=max(from_dt, month_start) if from_dt else month_start, to_date=to_dt,
+            )
+            active_patients = await self._assessment_repo.count_distinct_patients_filtered(
+                doctor_id=doctor_id, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=from_dt, to_date=to_dt,
+            )
             active_doctors = 1
+            active_diseases = await self._disease_repo.count(is_active=True)
+        elif has_extra_filters:
+            total_assessments = await self._assessment_repo.count_filtered(
+                doctor_ids=query.doctor_ids, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=from_dt, to_date=to_dt,
+            )
+            this_month_assessments = await self._assessment_repo.count_filtered(
+                doctor_ids=query.doctor_ids, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=max(from_dt, month_start) if from_dt else month_start, to_date=to_dt,
+            )
+            active_patients = await self._assessment_repo.count_distinct_patients_filtered(
+                doctor_ids=query.doctor_ids, disease_ids=query.disease_ids,
+                age_group=query.age_group, gender=query.gender,
+                from_date=from_dt, to_date=to_dt,
+            )
+            active_doctors = await self._user_repo.count(role="doctor", is_active=True)
             active_diseases = await self._disease_repo.count(is_active=True)
         else:
             total_assessments = await self._assessment_repo.count()
@@ -193,13 +266,21 @@ class GetAnalyticsUseCase:
         )
 
     async def get_monthly_volume(self, query: GetMonthlyVolumeQuery) -> list[MonthlyVolumeItem]:
-        """Retrieve monthly assessment volume for trailing 12 months."""
+        """Retrieve monthly assessment volume for trailing 12 months, optionally
+        filtered by disease / doctor / age group / gender."""
         now = datetime.now(tz=timezone.utc)
         twelve_months_ago = (now.replace(day=1) - timedelta(days=365)).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
         doctor_id = self._doctor_scope(query.actor)
-        rows = await self._assessment_repo.get_monthly_volume(twelve_months_ago, doctor_id=doctor_id)
+        rows = await self._assessment_repo.get_monthly_volume(
+            twelve_months_ago,
+            doctor_id=doctor_id,
+            doctor_ids=query.doctor_ids,
+            disease_ids=query.disease_ids,
+            age_group=query.age_group,
+            gender=query.gender,
+        )
         return [
             MonthlyVolumeItem(month=f"{yr:04d}-{mo:02d}", count=cnt)
             for yr, mo, cnt in rows
@@ -217,7 +298,13 @@ class GetAnalyticsUseCase:
         )
         doctor_id = self._doctor_scope(query.actor)
         rows = await self._assessment_repo.get_by_disease_distribution(
-            from_date=from_dt, to_date=to_dt, doctor_id=doctor_id
+            from_date=from_dt,
+            to_date=to_dt,
+            doctor_id=doctor_id,
+            doctor_ids=query.doctor_ids,
+            disease_ids=query.disease_ids,
+            age_group=query.age_group,
+            gender=query.gender,
         )
         return [
             DiseaseDistributionItem(disease_name=name, count=cnt)
@@ -238,7 +325,15 @@ class GetAnalyticsUseCase:
             else now
         )
         doctor_id = self._doctor_scope(query.actor)
-        rows = await self._assessment_repo.get_daily_trend(start, end, doctor_id=doctor_id)
+        rows = await self._assessment_repo.get_daily_trend(
+            start,
+            end,
+            doctor_id=doctor_id,
+            doctor_ids=query.doctor_ids,
+            disease_ids=query.disease_ids,
+            age_group=query.age_group,
+            gender=query.gender,
+        )
         return [
             TrendItem(date=f"{yr:04d}-{mo:02d}-{dy:02d}", count=cnt)
             for yr, mo, dy, cnt in rows
@@ -264,6 +359,10 @@ class GetAnalyticsUseCase:
             to_date=to_dt,
             disease_id=query.disease_id,
             doctor_id=doctor_id,
+            doctor_ids=query.doctor_ids,
+            disease_ids=query.disease_ids,
+            age_group=query.age_group,
+            gender=query.gender,
         )
         return [
             DiseaseSummaryRow(
@@ -289,7 +388,12 @@ class GetAnalyticsUseCase:
 
         doctor_id = self._doctor_scope(query.actor)
         rows = await self._assessment_repo.get_statistics_rows(
-            disease_id=query.disease_id, doctor_id=doctor_id
+            disease_id=query.disease_id,
+            doctor_id=doctor_id,
+            doctor_ids=query.doctor_ids,
+            disease_ids=query.disease_ids,
+            age_group=query.age_group,
+            gender=query.gender,
         )
 
         if not rows:

@@ -145,6 +145,7 @@ export function Topbar({ onSidebarToggle }: TopbarProps) {
             <div className="popover user-popover" role="menu">
               <div className="user-popover-info">
                 <span className="user-popover-name">{user.fullName}</span>
+                {user.email && <span className="user-popover-email">{user.email}</span>}
                 <span className="user-popover-role">{user.role?.replace('_', ' ')}</span>
               </div>
               <button className="user-popover-item" role="menuitem" onClick={handleLogout}>
@@ -343,6 +344,13 @@ export function Topbar({ onSidebarToggle }: TopbarProps) {
           border-bottom: 1px solid var(--color-neutral-200);
         }
         .user-popover-name { font-size: 13px; font-weight: 700; color: var(--color-neutral-800); }
+        .user-popover-email {
+          font-size: 11px;
+          color: var(--color-neutral-500);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         .user-popover-role { font-size: 12px; color: var(--color-neutral-500); text-transform: capitalize; }
         .user-popover-item {
           display: flex;

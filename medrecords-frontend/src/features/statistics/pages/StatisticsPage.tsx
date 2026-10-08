@@ -50,29 +50,40 @@ export function StatisticsPage() {
   const [selectedDiseaseId, setSelectedDiseaseId] = useState<number | ''>('');
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
 
-  const loadDiseaseOptions = useCallback(async () => {
+  const loadDiseaseOptions = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await apiClient.get<{ items: DiseaseOption[]; total: number }>('/diseases/?page_size=100');
+      const res = await apiClient.get<{ items: DiseaseOption[]; total: number }>(
+        '/diseases/?page_size=100',
+        { signal },
+      );
       setDiseaseOptions(res.data.items ?? []);
-    } catch { /* non-critical */ }
+    } catch { /* non-critical (including abort) */ }
   }, []);
 
-  const loadStatistics = useCallback(async (diseaseId?: number) => {
+  const loadStatistics = useCallback(async (diseaseId?: number, signal?: AbortSignal) => {
     setLoading(true);
     try {
       let url = '/analytics/patient-statistics';
       if (diseaseId) {
         url += `?disease_id=${diseaseId}`;
       }
-      const res = await apiClient.get<PatientStatistics>(url);
+      const res = await apiClient.get<PatientStatistics>(url, { signal });
       setStatistics(res.data);
-    } catch { /* handled */ }
+    } catch {
+      /* handled (including abort — avoid flipping loading off on a cancelled request) */
+      if (signal?.aborted) return;
+    }
     setLoading(false);
   }, []);
 
+  // Initial load — aborts in-flight requests on unmount so a fast
+  // mount/unmount/remount cycle (e.g. React StrictMode in dev, or rapid
+  // tab-switching) never races a stale response into state.
   useEffect(() => {
-    loadDiseaseOptions();
-    loadStatistics();
+    const controller = new AbortController();
+    loadDiseaseOptions(controller.signal);
+    loadStatistics(undefined, controller.signal);
+    return () => controller.abort();
   }, [loadDiseaseOptions, loadStatistics]);
 
   // Render bubble charts when statistics change
@@ -92,7 +103,7 @@ export function StatisticsPage() {
   function onDiseaseChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const val = e.target.value;
     setSelectedDiseaseId(val ? Number(val) : '');
-    loadStatistics(val ? Number(val) : undefined);
+    loadStatistics(val ? Number(val) : undefined, undefined);
   }
 
   function renderBubbleChart(canvas: HTMLCanvasElement, categories: CategoryCount[]) {

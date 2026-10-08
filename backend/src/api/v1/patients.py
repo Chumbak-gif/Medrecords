@@ -14,6 +14,7 @@ from src.api.v1.dependencies.auth import get_current_user, role_required
 from src.api.v1.dependencies.container import get_db
 from src.api.v1.schemas.common import PaginatedResponse
 from src.api.v1.schemas.patient import (
+    AssociatedDoctor,
     PatientDetail,
     PatientResponse,
     RegisterPatientDto,
@@ -67,12 +68,22 @@ async def list_patients(
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     search: str = Query("", description="Search term matched against name / contact / uid"),
+    scope: str = Query(
+        "mine",
+        description=(
+            "'mine' (default) — doctors see only patients they registered or have "
+            "assessed; admin/sys_admin always see all. 'all' — any authenticated "
+            "doctor/admin/sys_admin sees the full active patient roster (used when "
+            "searching for an existing patient during a new assessment, since any "
+            "doctor may see a walk-in patient regardless of who registered them)."
+        ),
+    ),
     current_user: UserModel = Depends(role_required(_DOCTOR_ROLES)),
     db: AsyncSession = Depends(get_db),
 ) -> PaginatedResponse[PatientResponse]:
     q = select(PatientModel).where(PatientModel.is_active.is_(True))
 
-    if current_user.role == "doctor":
+    if current_user.role == "doctor" and scope != "all":
         doctor_assessment_patient_ids = (
             select(AssessmentModel.patient_id)
             .where(AssessmentModel.doctor_id == current_user.id)
@@ -189,25 +200,16 @@ async def get_patient(
     if patient is None or not patient.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
-    if current_user.role == "doctor":
-        assessment_exists_result = await db.execute(
-            select(func.count())
-            .select_from(AssessmentModel)
-            .where(
-                AssessmentModel.patient_id == id,
-                AssessmentModel.doctor_id == current_user.id,
-            )
-        )
-        has_assessment = assessment_exists_result.scalar_one() > 0
-        if patient.registered_by != current_user.id and not has_assessment:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to view this patient",
-            )
+    # Any authenticated doctor/admin/sys_admin may view a patient's profile and
+    # visit history. Walk-in patients may see a different doctor than the one
+    # who originally registered them, and continuity of care requires any
+    # treating doctor to see prior visits regardless of who recorded them.
+    # (Write access via PATCH remains ownership-scoped — see update_patient.)
 
     visits_result = await db.execute(
-        select(AssessmentModel, DiseaseModel.name.label("disease_name"))
+        select(AssessmentModel, DiseaseModel.name.label("disease_name"), UserModel.full_name.label("doctor_name"))
         .join(DiseaseModel, AssessmentModel.disease_id == DiseaseModel.id)
+        .join(UserModel, AssessmentModel.doctor_id == UserModel.id)
         .where(AssessmentModel.patient_id == id)
         .order_by(AssessmentModel.created_at.desc())
     )
@@ -219,9 +221,60 @@ async def get_patient(
             visit_date=row.AssessmentModel.created_at,
             disease_name=row.disease_name,
             status=row.AssessmentModel.status,
+            doctor_id=row.AssessmentModel.doctor_id,
+            doctor_name=row.doctor_name,
         )
         for row in rows
     ]
+
+    # ------------------------------------------------------------------
+    # Associated doctors: the registering doctor (if any) plus every
+    # distinct doctor who has performed an assessment on this patient.
+    # ------------------------------------------------------------------
+    associated_doctors: list[AssociatedDoctor] = []
+    seen_doctor_ids: set[int] = set()
+
+    visit_counts: dict[int, int] = {}
+    for v in visits:
+        if v.doctor_id is not None:
+            visit_counts[v.doctor_id] = visit_counts.get(v.doctor_id, 0) + 1
+
+    if patient.registered_by is not None:
+        reg_doctor_result = await db.execute(
+            select(UserModel).where(UserModel.id == patient.registered_by)
+        )
+        reg_doctor = reg_doctor_result.scalar_one_or_none()
+        if reg_doctor is not None:
+            associated_doctors.append(
+                AssociatedDoctor(
+                    id=reg_doctor.id,
+                    full_name=reg_doctor.full_name,
+                    specialty=reg_doctor.specialty,
+                    role=reg_doctor.role,
+                    is_registering_doctor=True,
+                    visit_count=visit_counts.get(reg_doctor.id, 0),
+                )
+            )
+            seen_doctor_ids.add(reg_doctor.id)
+
+    distinct_assessment_doctor_ids = [
+        did for did in visit_counts.keys() if did not in seen_doctor_ids
+    ]
+    if distinct_assessment_doctor_ids:
+        other_doctors_result = await db.execute(
+            select(UserModel).where(UserModel.id.in_(distinct_assessment_doctor_ids))
+        )
+        for doc in other_doctors_result.scalars().all():
+            associated_doctors.append(
+                AssociatedDoctor(
+                    id=doc.id,
+                    full_name=doc.full_name,
+                    specialty=doc.specialty,
+                    role=doc.role,
+                    is_registering_doctor=False,
+                    visit_count=visit_counts.get(doc.id, 0),
+                )
+            )
 
     return PatientDetail(
         id=patient.id,
@@ -237,6 +290,7 @@ async def get_patient(
         created_at=patient.created_at,
         updated_at=patient.updated_at,
         visits=visits,
+        associated_doctors=associated_doctors,
     )
 
 

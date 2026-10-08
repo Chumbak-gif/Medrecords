@@ -183,16 +183,22 @@ async def list_followups(
     page_size: int = Query(20, ge=1, le=100),
     status_filter: Optional[str] = Query(None, alias="status"),
     patient_id: Optional[int] = Query(None),
-    current_user: UserModel = Depends(role_required(["doctor"])),
+    current_user: UserModel = Depends(role_required(["doctor", "admin", "sys_admin"])),
     use_case: ListFollowupsUseCase = Depends(get_list_followups_use_case),
 ) -> PaginatedResponse[FollowupResponse]:
     actor = _to_actor(current_user)
+    # Doctors only see their own follow-ups. Admin/sys_admin viewing a
+    # specific patient's record (e.g. the Patient Detail page) see all
+    # follow-ups for that patient regardless of which doctor scheduled them.
+    is_admin_viewer = current_user.role in ("admin", "sys_admin")
+    scoped_doctor_id = None if is_admin_viewer else actor.id
     query = ListFollowupsQuery(
         page=page,
         page_size=page_size,
         status=status_filter,
         patient_id=patient_id,
         actor=actor,
+        scope_to_actor=not is_admin_viewer,
     )
     result = await use_case.execute(query)
 
@@ -200,7 +206,7 @@ async def list_followups(
     enriched_items = await use_case._followup_repo.list_enriched(
         offset=(page - 1) * page_size,
         limit=page_size,
-        doctor_id=actor.id,
+        doctor_id=scoped_doctor_id,
         patient_id=patient_id,
         status=status_filter,
     )
@@ -275,7 +281,7 @@ async def list_followups_calendar(
 @router.get("/{id}", response_model=FollowupResponse)
 async def get_followup(
     id: int,
-    current_user: UserModel = Depends(role_required(["doctor"])),
+    current_user: UserModel = Depends(role_required(["doctor", "admin", "sys_admin"])),
     use_case: GetFollowupUseCase = Depends(get_get_followup_use_case),
 ) -> FollowupResponse:
     actor = _to_actor(current_user)
@@ -292,7 +298,7 @@ async def get_followup(
 async def update_followup(
     id: int,
     payload: FollowupUpdate,
-    current_user: UserModel = Depends(role_required(["doctor"])),
+    current_user: UserModel = Depends(role_required(["doctor", "admin", "sys_admin"])),
     use_case: UpdateFollowupUseCase = Depends(get_update_followup_use_case),
 ) -> FollowupResponse:
     actor = _to_actor(current_user)

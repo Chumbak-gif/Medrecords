@@ -10,6 +10,20 @@ Steps performed:
 Usage:
     cd backend
     python seed.py
+
+Credentials:
+  The sys_admin password defaults to "Admin@1234" for local development
+  convenience, but can (and should, outside local dev) be overridden by
+  setting SEED_ADMIN_PASSWORD in backend/.env (or a real environment
+  variable — pydantic-settings reads both). The sys_admin account always
+  requires a password change on first login (must_change_password=TRUE).
+
+  Demo users (dr.smith / adminuser / pharmauser) are ONLY created when
+  ENVIRONMENT is "development" (the default) — they are never seeded against
+  a production database, to avoid leaving well-known credentials on a real
+  deployment. Their passwords can also be overridden via SEED_DOCTOR_PASSWORD
+  / SEED_ADMINUSER_PASSWORD / SEED_PHARMA_PASSWORD in backend/.env if needed
+  for a shared staging environment.
 """
 
 import asyncio
@@ -31,6 +45,17 @@ from app.config import settings
 # Password hashing
 # ---------------------------------------------------------------------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ---------------------------------------------------------------------------
+# Credentials — overridable via backend/.env (or real environment variables).
+# Fixed fallbacks on the Settings fields are for local development only;
+# see module docstring and app/config.py.
+# ---------------------------------------------------------------------------
+ADMIN_PASSWORD = settings.seed_admin_password
+DOCTOR_PASSWORD = settings.seed_doctor_password
+ADMINUSER_PASSWORD = settings.seed_adminuser_password
+PHARMA_PASSWORD = settings.seed_pharma_password
+IS_PRODUCTION = settings.environment.lower() == "production"
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +125,7 @@ async def seed_data() -> None:
             # Upsert sys_admin user
             # ----------------------------------------------------------------
             print("[seed] Upserting sys_admin user …")
-            hashed_password = pwd_context.hash("Admin@1234")
+            hashed_password = pwd_context.hash(ADMIN_PASSWORD)
 
             await session.execute(
                 text(
@@ -108,7 +133,7 @@ async def seed_data() -> None:
                     INSERT INTO users
                         (username, email, full_name, hashed_password, role, is_active, must_change_password)
                     VALUES
-                        (:username, :email, :full_name, :hashed_password, :role, TRUE, FALSE)
+                        (:username, :email, :full_name, :hashed_password, :role, TRUE, TRUE)
                     ON CONFLICT (username) DO NOTHING
                     """
                 ),
@@ -120,48 +145,59 @@ async def seed_data() -> None:
                     "role": "sys_admin",
                 },
             )
-            print("[seed] sys_admin user upserted (skipped if already exists).")
+            print(
+                "[seed] sys_admin user upserted (skipped if already exists); "
+                "must change password on first login."
+            )
 
             # ----------------------------------------------------------------
-            # Upsert demo users for every role
+            # Demo users (doctor / admin / pharma) — development only. These
+            # are never seeded against a production database so well-known
+            # demo credentials never end up on a real deployment.
             # ----------------------------------------------------------------
-            demo_users = [
-                {
-                    "username": "dr.smith",
-                    "email": "dr.smith@medrecords.com",
-                    "full_name": "Dr. Sarah Smith",
-                    "hashed_password": pwd_context.hash("Doctor@1234"),
-                    "role": "doctor",
-                },
-                {
-                    "username": "adminuser",
-                    "email": "adminuser@medrecords.com",
-                    "full_name": "Admin User",
-                    "hashed_password": pwd_context.hash("Admin@1234"),
-                    "role": "admin",
-                },
-                {
-                    "username": "pharmauser",
-                    "email": "pharmauser@medrecords.com",
-                    "full_name": "Pharma Analyst",
-                    "hashed_password": pwd_context.hash("Pharma@1234"),
-                    "role": "pharma_viewer",
-                },
-            ]
-            for u in demo_users:
-                await session.execute(
-                    text(
-                        """
-                        INSERT INTO users
-                            (username, email, full_name, hashed_password, role, is_active, must_change_password)
-                        VALUES
-                            (:username, :email, :full_name, :hashed_password, :role, TRUE, FALSE)
-                        ON CONFLICT (username) DO NOTHING
-                        """
-                    ),
-                    u,
+            if IS_PRODUCTION:
+                print(
+                    "[seed] ENVIRONMENT=production — skipping demo user creation "
+                    "(dr.smith / adminuser / pharmauser)."
                 )
-            print("[seed] Demo users upserted.")
+            else:
+                demo_users = [
+                    {
+                        "username": "dr.smith",
+                        "email": "dr.smith@medrecords.com",
+                        "full_name": "Dr. Sarah Smith",
+                        "hashed_password": pwd_context.hash(DOCTOR_PASSWORD),
+                        "role": "doctor",
+                    },
+                    {
+                        "username": "adminuser",
+                        "email": "adminuser@medrecords.com",
+                        "full_name": "Admin User",
+                        "hashed_password": pwd_context.hash(ADMINUSER_PASSWORD),
+                        "role": "admin",
+                    },
+                    {
+                        "username": "pharmauser",
+                        "email": "pharmauser@medrecords.com",
+                        "full_name": "Pharma Analyst",
+                        "hashed_password": pwd_context.hash(PHARMA_PASSWORD),
+                        "role": "pharma_viewer",
+                    },
+                ]
+                for u in demo_users:
+                    await session.execute(
+                        text(
+                            """
+                            INSERT INTO users
+                                (username, email, full_name, hashed_password, role, is_active, must_change_password)
+                            VALUES
+                                (:username, :email, :full_name, :hashed_password, :role, TRUE, FALSE)
+                            ON CONFLICT (username) DO NOTHING
+                            """
+                        ),
+                        u,
+                    )
+                print("[seed] Demo users upserted.")
 
             # ----------------------------------------------------------------
             # Upsert app_config: lock_window_hours

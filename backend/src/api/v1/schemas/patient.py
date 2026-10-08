@@ -54,9 +54,26 @@ class VisitSummary(BaseModel):
     visit_date: datetime
     disease_name: str
     status: str
+    doctor_id: Optional[int] = None
+    doctor_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AssociatedDoctor(BaseModel):
+    """A doctor linked to this patient — either the one who registered them
+    or one who has performed at least one assessment on them."""
+
+    id: int
+    full_name: str
+    specialty: Optional[str] = None
+    role: str
+    is_registering_doctor: bool = False
+    visit_count: int = 0
 
     model_config = {"from_attributes": True}
 
 
 class PatientDetail(PatientResponse):
     visits: list[VisitSummary] = []
+    associated_doctors: list[AssociatedDoctor] = []

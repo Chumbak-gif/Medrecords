@@ -84,6 +84,17 @@ python seed.py
 python seed_analytics_data.py   # optional demo analytics data
 ```
 
+**Production safety:** `seed.py` always creates the `sys_admin` account
+(forced to change its password on first login), but only seeds the demo
+users (`dr.smith` / `adminuser` / `pharmauser` — fixed, well-known passwords
+meant for local dev/QA) when `ENVIRONMENT` is unset or `development`. Set
+`ENVIRONMENT=production` to skip demo user creation entirely. Override the
+seeded passwords via `app/.env` instead of relying on the in-repo defaults:
+```
+ENVIRONMENT=production
+SEED_ADMIN_PASSWORD=<a-strong-unique-password>
+```
+
 ### Run
 On the server the backend runs under systemd (service `medrecords-backend`)
 via gunicorn+uvicorn workers bound to `127.0.0.1:8006` (loopback only). Manage

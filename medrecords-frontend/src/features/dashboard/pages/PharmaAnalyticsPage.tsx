@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createTypedApiClient } from '@/shared/services/api/apiClient';
+import { animate } from '@/shared/utils/canvasAnimation';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface PharmaKpis {
@@ -103,6 +104,13 @@ export function PharmaAnalyticsPage() {
     return 'Last 30 days';
   }, [dateRange]);
 
+  // Monotonically increasing request tokens — guards against out-of-order
+  // responses (e.g. two filter changes fired in quick succession) applying
+  // stale data to state after a newer request has already resolved.
+  const kpisRequestRef = useRef(0);
+  const chartsRequestRef = useRef(0);
+  const summaryRequestRef = useRef(0);
+
   // ── Data Loading ──
   const loadDiseaseOptions = useCallback(async () => {
     try {
@@ -112,9 +120,11 @@ export function PharmaAnalyticsPage() {
   }, []);
 
   const loadKpis = useCallback(async (qs: string) => {
+    const requestId = ++kpisRequestRef.current;
     setKpiLoading(true);
     try {
       const res = await apiClient.get<AdminKpisResponse>(`/analytics/kpis${qs}`);
+      if (requestId !== kpisRequestRef.current) return; // superseded by a newer request
       // active_doctors intentionally omitted for pharma view
       setKpis({
         total_assessments: res.data.total_assessments,
@@ -122,11 +132,15 @@ export function PharmaAnalyticsPage() {
         active_patients: res.data.active_patients,
         active_diseases: res.data.active_diseases,
       });
-    } catch { /* handled */ }
-    setKpiLoading(false);
+    } catch {
+      /* handled */
+    } finally {
+      if (requestId === kpisRequestRef.current) setKpiLoading(false);
+    }
   }, []);
 
   const loadChartData = useCallback(async (qs: string) => {
+    const requestId = ++chartsRequestRef.current;
     setChartsLoading(true);
     try {
       const [monthly, disease, trendData] = await Promise.all([
@@ -134,20 +148,29 @@ export function PharmaAnalyticsPage() {
         apiClient.get<DiseaseDistributionItem[]>(`/analytics/by-disease${qs}`),
         apiClient.get<TrendItem[]>(`/analytics/trend${qs}`),
       ]);
+      if (requestId !== chartsRequestRef.current) return; // superseded by a newer request
       setMonthlyVolume(monthly.data);
       setByDisease(disease.data);
       setTrend(trendData.data);
-    } catch { /* handled */ }
-    setChartsLoading(false);
+    } catch {
+      /* handled */
+    } finally {
+      if (requestId === chartsRequestRef.current) setChartsLoading(false);
+    }
   }, []);
 
   const loadSummary = useCallback(async (qs: string) => {
+    const requestId = ++summaryRequestRef.current;
     setSummaryLoading(true);
     try {
       const res = await apiClient.get<DiseaseSummaryRow[]>(`/analytics/disease-summary${qs}`);
+      if (requestId !== summaryRequestRef.current) return; // superseded by a newer request
       setDiseaseSummary(res.data);
-    } catch { /* handled */ }
-    setSummaryLoading(false);
+    } catch {
+      /* handled */
+    } finally {
+      if (requestId === summaryRequestRef.current) setSummaryLoading(false);
+    }
   }, []);
 
   const applyFilters = useCallback(() => {
@@ -199,13 +222,22 @@ export function PharmaAnalyticsPage() {
     }
   };
 
-  // Auto-apply when a date preset sets a concrete range (matches admin behavior)
+  // Auto-apply when a date preset sets a concrete range — including "custom"
+  // once the user has picked both a from and to date via the date inputs.
   useEffect(() => {
-    if (activeDatePreset && activeDatePreset !== 'custom' && dateRange) {
+    if (activeDatePreset && dateRange && dateRange[0] && dateRange[1]) {
       applyFilters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
+
+  function onCustomFromChange(value: string) {
+    setDateRange([value || '', dateRange?.[1] ?? '']);
+  }
+
+  function onCustomToChange(value: string) {
+    setDateRange([dateRange?.[0] ?? '', value || '']);
+  }
 
   // Initial load
   useEffect(() => {
@@ -218,7 +250,7 @@ export function PharmaAnalyticsPage() {
   }, []);
 
   // ── Chart Rendering ──
-  const renderBarChart = useCallback(() => {
+  const renderBarChart = useCallback((progress = 1) => {
     const canvas = barCanvasRef.current;
     if (!canvas || monthlyVolume.length === 0) return;
     const dpr = window.devicePixelRatio || 1;
@@ -252,9 +284,9 @@ export function PharmaAnalyticsPage() {
       ctx.fillText(String(Math.round((i / 4) * maxVal)), pad.left - 6, y + 4);
     }
 
-    // Bars
+    // Bars — height animates in from 0 to full on first paint (progress 0→1)
     monthlyVolume.forEach((item, i) => {
-      const barH = (item.count / maxVal) * chartH;
+      const barH = (item.count / maxVal) * chartH * progress;
       const x = pad.left + i * barGap + (barGap - barW) / 2;
       const y = pad.top + chartH - barH;
       ctx.fillStyle = '#06b6d4';
@@ -274,7 +306,7 @@ export function PharmaAnalyticsPage() {
     });
   }, [monthlyVolume]);
 
-  const renderDonutChart = useCallback(() => {
+  const renderDonutChart = useCallback((progress = 1) => {
     const canvas = donutCanvasRef.current;
     if (!canvas || byDisease.length === 0) return;
     const data = byDisease.slice(0, 8);
@@ -292,9 +324,13 @@ export function PharmaAnalyticsPage() {
     const outer = size * 0.42;
     const inner = outer * 0.55;
     let start = -Math.PI / 2;
+    // Slices sweep in together, scaled by progress, so the donut draws
+    // itself clockwise from the top on first paint instead of popping in.
+    const sweep = 2 * Math.PI * progress;
 
     data.forEach((item, i) => {
-      const slice = (item.count / total) * 2 * Math.PI;
+      const slice = (item.count / total) * sweep;
+      if (slice <= 0) return;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, outer, start, start + slice);
@@ -311,18 +347,18 @@ export function PharmaAnalyticsPage() {
       .getPropertyValue('--surface-card').trim() || '#ffffff';
     ctx.fill();
 
-    // Centre label
+    // Centre label — total count counts up alongside the sweep animation
     ctx.fillStyle = '#111827';
     ctx.font = `bold ${Math.round(size * 0.12)}px Poppins, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(total), cx, cy - size * 0.06);
+    ctx.fillText(String(Math.round(total * progress)), cx, cy - size * 0.06);
     ctx.font = `${Math.round(size * 0.08)}px Poppins, sans-serif`;
     ctx.fillStyle = '#6b7280';
     ctx.fillText('Total', cx, cy + size * 0.08);
   }, [byDisease]);
 
-  const renderLineChart = useCallback(() => {
+  const renderLineChart = useCallback((progress = 1) => {
     const canvas = lineCanvasRef.current;
     if (!canvas || trend.length === 0) return;
     const dpr = window.devicePixelRatio || 1;
@@ -355,18 +391,22 @@ export function PharmaAnalyticsPage() {
       ctx.fillText(String(Math.round((i / 4) * maxVal)), pad.left - 6, y + 4);
     }
 
+    // Only draw the line/area up to this point — sweeps in left-to-right.
+    const visibleCount = Math.max(2, Math.ceil(trend.length * progress));
+    const visibleTrend = trend.slice(0, visibleCount);
+
     // Area fill
     const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
     gradient.addColorStop(0, 'rgba(6,182,212,0.2)');
     gradient.addColorStop(1, 'rgba(6,182,212,0)');
     ctx.beginPath();
     ctx.moveTo(pad.left, pad.top + chartH);
-    trend.forEach((item, i) => {
+    visibleTrend.forEach((item, i) => {
       const x = pad.left + i * stepX;
       const y = pad.top + chartH - (item.count / maxVal) * chartH;
       ctx.lineTo(x, y);
     });
-    ctx.lineTo(pad.left + (trend.length - 1) * stepX, pad.top + chartH);
+    ctx.lineTo(pad.left + (visibleTrend.length - 1) * stepX, pad.top + chartH);
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
@@ -376,16 +416,16 @@ export function PharmaAnalyticsPage() {
     ctx.strokeStyle = '#06b6d4';
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
-    trend.forEach((item, i) => {
+    visibleTrend.forEach((item, i) => {
       const x = pad.left + i * stepX;
       const y = pad.top + chartH - (item.count / maxVal) * chartH;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // Dots + X labels
+    // Dots + X labels (only on the fully-visible portion)
     const labelEvery = Math.ceil(trend.length / 12);
-    trend.forEach((item, i) => {
+    visibleTrend.forEach((item, i) => {
       const x = pad.left + i * stepX;
       const y = pad.top + chartH - (item.count / maxVal) * chartH;
       ctx.beginPath();
@@ -403,16 +443,25 @@ export function PharmaAnalyticsPage() {
     });
   }, [trend]);
 
-  // Render charts when data changes or view switches to graphical
+  // Render charts when data changes or view switches to graphical. Charts
+  // animate in (bars grow, donut sweeps, line draws left-to-right) on each
+  // paint rather than appearing fully drawn.
   useEffect(() => {
-    if (activeView === 'graphical' && !chartsLoading) {
-      const timer = setTimeout(() => {
-        renderBarChart();
-        renderDonutChart();
-        renderLineChart();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
+    if (activeView !== 'graphical' || chartsLoading) return;
+
+    let cancelAnim: (() => void) | undefined;
+    const timer = setTimeout(() => {
+      cancelAnim = animate((progress) => {
+        renderBarChart(progress);
+        renderDonutChart(progress);
+        renderLineChart(progress);
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      cancelAnim?.();
+    };
   }, [activeView, chartsLoading, renderBarChart, renderDonutChart, renderLineChart]);
 
   // ── Computed values ──
@@ -521,11 +570,33 @@ export function PharmaAnalyticsPage() {
         <div className="filter-grid pharma-filter-grid">
           <div className="filter-field">
             <label className="label">Date Range</label>
-            <div className="select-wrapper">
-              <input type="text" className="form-control" readOnly
-                value={dateRange ? `${dateRange[0]} – ${dateRange[1]}` : ''}
-                placeholder="Select date range" />
-            </div>
+            {activeDatePreset === 'custom' ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="date"
+                  className="form-control"
+                  aria-label="From date"
+                  value={dateRange?.[0] ?? ''}
+                  max={dateRange?.[1] || undefined}
+                  onChange={(e) => onCustomFromChange(e.target.value)}
+                />
+                <span style={{ color: 'var(--color-neutral-400)', fontSize: 12 }}>to</span>
+                <input
+                  type="date"
+                  className="form-control"
+                  aria-label="To date"
+                  value={dateRange?.[1] ?? ''}
+                  min={dateRange?.[0] || undefined}
+                  onChange={(e) => onCustomToChange(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div className="select-wrapper">
+                <input type="text" className="form-control" readOnly
+                  value={dateRange ? `${dateRange[0]} – ${dateRange[1]}` : ''}
+                  placeholder="Select date range" />
+              </div>
+            )}
           </div>
           <div className="filter-field">
             <label className="label">Diseases</label>

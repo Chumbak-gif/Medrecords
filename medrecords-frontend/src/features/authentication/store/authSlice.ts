@@ -23,6 +23,34 @@ import { createTypedApiClient } from '@/shared/services/api/apiClient';
 import { persistSession, persistUser, clearSession } from '../services/authPersistence';
 
 // ---------------------------------------------------------------------------
+// Raw /auth/me response shape (snake_case, as returned by the backend).
+// ---------------------------------------------------------------------------
+
+interface UserProfileResponse {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  role: UserProfile['role'];
+  specialty: string | null;
+  is_active: boolean;
+  must_change_password: boolean;
+}
+
+function mapUserProfileResponse(raw: UserProfileResponse): UserProfile {
+  return {
+    id: raw.id,
+    username: raw.username,
+    email: raw.email,
+    fullName: raw.full_name,
+    role: raw.role,
+    specialty: raw.specialty,
+    isActive: raw.is_active,
+    mustChangePassword: raw.must_change_password,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // In-memory token storage (module-level closure — mirrored to sessionStorage
 // so a full page reload keeps the user logged in)
 // ---------------------------------------------------------------------------
@@ -125,9 +153,9 @@ export const login = createAsyncThunk<
     setToken(tokenResponse.access_token);
 
     // Build a basic user profile from the token response
-    const user: UserProfile = {
+    let user: UserProfile = {
       id: tokenResponse.user_id,
-      username: '', // Will be populated by getProfile
+      username: '',
       email: '',
       fullName: tokenResponse.full_name,
       role: tokenResponse.role,
@@ -135,6 +163,15 @@ export const login = createAsyncThunk<
       isActive: true,
       mustChangePassword: tokenResponse.must_change_password,
     };
+
+    // Fetch the full profile (username, email, specialty) right away so the
+    // UI doesn't show blank fields until a separate getProfile dispatch.
+    try {
+      const profileResponse = await apiClient.get<UserProfileResponse>('/auth/me');
+      user = mapUserProfileResponse(profileResponse.data);
+    } catch {
+      // Non-fatal — fall back to the partial profile from the token response.
+    }
 
     // Persist to sessionStorage so a reload keeps the user logged in
     persistSession(tokenResponse.access_token, user);
@@ -222,10 +259,11 @@ export const getProfile = createAsyncThunk<
   { rejectValue: AuthError }
 >('auth/getProfile', async (_, { rejectWithValue }) => {
   try {
-    const response = await apiClient.get<UserProfile>('/auth/me');
+    const response = await apiClient.get<UserProfileResponse>('/auth/me');
+    const user = mapUserProfileResponse(response.data);
     // Keep the persisted session's user profile in sync.
-    persistUser(response.data);
-    return response.data;
+    persistUser(user);
+    return user;
   } catch {
     return rejectWithValue({
       message: 'Failed to load user profile.',

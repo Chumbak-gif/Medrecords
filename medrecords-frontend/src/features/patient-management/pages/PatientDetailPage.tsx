@@ -28,6 +28,16 @@ interface AssessmentSummary {
   disease_name: string;
   sub_disease_name: string | null;
   status: 'draft' | 'submitted' | 'locked' | string;
+  doctor_name?: string | null;
+}
+
+interface AssociatedDoctor {
+  id: number;
+  full_name: string;
+  specialty: string | null;
+  role: string;
+  is_registering_doctor: boolean;
+  visit_count: number;
 }
 
 interface Followup {
@@ -102,6 +112,7 @@ export function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
+  const [associatedDoctors, setAssociatedDoctors] = useState<AssociatedDoctor[]>([]);
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [showFollowupDialog, setShowFollowupDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -133,7 +144,7 @@ export function PatientDetailPage() {
 
   const loadFollowups = useCallback(async (patientId: number) => {
     try {
-      const res = await apiClient.get<FollowupListResponse>('/followups', {
+      const res = await apiClient.get<FollowupListResponse>('/followups/', {
         params: { patient_id: patientId, page_size: 100 },
       });
       setFollowups(sortFollowups(res.data.items));
@@ -156,8 +167,12 @@ export function PatientDetailPage() {
         loadedPatient = detail.patient as Patient;
         setPatient(loadedPatient);
         setAssessments((detail.assessments as AssessmentSummary[]) ?? []);
+        setAssociatedDoctors((detail.associated_doctors as AssociatedDoctor[]) ?? []);
       } else {
-        const { visits, ...patientData } = detail as Record<string, unknown> & { visits?: unknown[] };
+        const { visits, associated_doctors, ...patientData } = detail as Record<string, unknown> & {
+          visits?: unknown[];
+          associated_doctors?: AssociatedDoctor[];
+        };
         loadedPatient = patientData as unknown as Patient;
         setPatient(loadedPatient);
         setAssessments(
@@ -167,8 +182,10 @@ export function PatientDetailPage() {
             disease_name: (v.disease_name ?? '') as string,
             sub_disease_name: (v.sub_disease_name ?? null) as string | null,
             status: v.status as string,
+            doctor_name: (v.doctor_name ?? null) as string | null,
           }))
         );
+        setAssociatedDoctors(associated_doctors ?? []);
       }
       setLoading(false);
       if (loadedPatient?.id) {
@@ -345,6 +362,61 @@ export function PatientDetailPage() {
             </div>
           </div>
 
+          {/* Associated Doctors Card */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Associated Doctors</h3>
+              <p style={{ margin: '4px 0 0', color: 'var(--color-neutral-600)', fontSize: 13 }}>
+                Doctors who registered or have treated this patient
+              </p>
+            </div>
+            {associatedDoctors.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-neutral-400)' }}>
+                <i className="pi pi-users" style={{ fontSize: '1.5rem', display: 'block', marginBottom: 8 }} />
+                No doctors associated with this patient yet.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {associatedDoctors.map((doc) => (
+                  <div
+                    key={doc.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 14px', borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-neutral-200)',
+                      background: 'var(--color-neutral-50)',
+                      minWidth: 220,
+                    }}
+                  >
+                    <span style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 36, height: 36, borderRadius: '50%',
+                      background: 'var(--color-primary)', color: '#fff', flexShrink: 0,
+                    }}>
+                      <i className="pi pi-user" />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-neutral-900)' }}>{doc.full_name}</span>
+                        {doc.is_registering_doctor && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999,
+                            background: '#e0f2fe', color: '#0369a1',
+                          }}>
+                            REGISTERED
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>
+                        {doc.specialty ? `${doc.specialty} · ` : ''}{doc.visit_count} visit{doc.visit_count === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Visit History Card */}
           <div className="card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -362,6 +434,7 @@ export function PatientDetailPage() {
                   <th style={{ ...thStyle, minWidth: 130 }}>Visit Date</th>
                   <th style={{ ...thStyle, minWidth: 180 }}>Disease</th>
                   <th style={{ ...thStyle, minWidth: 160 }}>Sub-Disease</th>
+                  <th style={{ ...thStyle, minWidth: 160 }}>Doctor</th>
                   <th style={{ ...thStyle, width: 120 }}>Status</th>
                   <th style={{ ...thStyle, width: 120 }}>Actions</th>
                 </tr>
@@ -369,7 +442,7 @@ export function PatientDetailPage() {
               <tbody>
                 {assessments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--color-neutral-400)' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--color-neutral-400)' }}>
                       <i className="pi pi-file-o" style={{ fontSize: '2rem', display: 'block', marginBottom: 8 }} />
                       No visits recorded yet.
                       {isDoctorContext && (
@@ -393,6 +466,9 @@ export function PatientDetailPage() {
                       </td>
                       <td style={tdStyle}>
                         <span style={{ color: 'var(--color-neutral-600)' }}>{assessment.sub_disease_name || '—'}</span>
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={{ color: 'var(--color-neutral-600)' }}>{assessment.doctor_name || '—'}</span>
                       </td>
                       <td style={tdStyle}>
                         <StatusBadge status={assessment.status} />

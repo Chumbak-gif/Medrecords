@@ -73,7 +73,14 @@ class IAssessmentRepository(ABC):
 
     @abstractmethod
     async def get_monthly_volume(
-        self, since: datetime, *, doctor_id: Optional[int] = None
+        self,
+        since: datetime,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[int, int, int]]:
         """Return (year, month, count) tuples for assessments since given datetime."""
         ...
@@ -85,6 +92,10 @@ class IAssessmentRepository(ABC):
         to_date: Optional[datetime] = None,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[str, int]]:
         """Return (disease_name, count) tuples for assessment distribution."""
         ...
@@ -96,6 +107,10 @@ class IAssessmentRepository(ABC):
         end: datetime,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[int, int, int, int]]:
         """Return (year, month, day, count) tuples for daily assessment trend."""
         ...
@@ -109,6 +124,10 @@ class IAssessmentRepository(ABC):
         disease_id: Optional[int] = None,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[str, int, int, int, int]]:
         """Return (disease_name, total, this_month, submitted, locked) tuples."""
         ...
@@ -119,8 +138,42 @@ class IAssessmentRepository(ABC):
         *,
         disease_id: Optional[int] = None,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[dict, Optional[object]]]:
         """Return (form_data, date_of_birth) pairs for patient statistics computation."""
+        ...
+
+    @abstractmethod
+    async def count_filtered(
+        self,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+    ) -> int:
+        """Return count of assessments matching the KPI filter set (date/disease/doctor/age/gender)."""
+        ...
+
+    @abstractmethod
+    async def count_distinct_patients_filtered(
+        self,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+    ) -> int:
+        """Return count of distinct patients matching the KPI filter set."""
         ...
 
     @abstractmethod

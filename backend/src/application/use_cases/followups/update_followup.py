@@ -53,8 +53,11 @@ class UpdateFollowupUseCase:
             if followup is None:
                 raise NotFoundError("Follow-up not found")
 
-            # Doctor can only modify their own followups
-            if followup.doctor_id != command.actor.id:
+            # Doctors can only modify their own follow-ups; admin/sys_admin
+            # may update any follow-up (e.g. marking it complete/cancelled
+            # from the Patient Detail page).
+            is_admin = command.actor is not None and command.actor.role in ("admin", "sys_admin")
+            if not is_admin and followup.doctor_id != command.actor.id:
                 raise ForbiddenError(
                     "You do not have permission to access this follow-up"
                 )

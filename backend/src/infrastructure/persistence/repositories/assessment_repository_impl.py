@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import Integer, cast, extract, func, select
+from sqlalchemy import Integer, and_, cast, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,6 +15,45 @@ from src.infrastructure.persistence.models.assessment_model import AssessmentMod
 from src.infrastructure.persistence.models.disease_model import DiseaseModel
 from src.infrastructure.persistence.models.patient_model import PatientModel
 from src.infrastructure.persistence.models.prescription_row_model import PrescriptionRowModel
+
+# Age-group boundaries used by the dashboard filter panel. Each tuple is
+# (min_age_inclusive, max_age_inclusive_or_None_for_no_upper_bound).
+_AGE_GROUP_RANGES: dict[str, tuple[int, Optional[int]]] = {
+    "0-17": (0, 17),
+    "18-35": (18, 35),
+    "36-50": (36, 50),
+    "51-65": (51, 65),
+    "66+": (66, None),
+}
+
+
+def _age_group_to_dob_range(age_group: str, today: Optional[date] = None) -> tuple[Optional[date], Optional[date]]:
+    """Convert an age-group key (e.g. "18-35") into a (earliest_dob, latest_dob)
+    range — i.e. the range of birth dates a patient must fall within to be
+    that age today. Returns (None, None) for an unrecognized key."""
+    bounds = _AGE_GROUP_RANGES.get(age_group)
+    if bounds is None:
+        return None, None
+    min_age, max_age = bounds
+    ref = today or date.today()
+
+    def _years_ago(years: int) -> date:
+        try:
+            return ref.replace(year=ref.year - years)
+        except ValueError:
+            # Feb 29 on a non-leap target year — fall back to Feb 28.
+            return ref.replace(month=2, day=28, year=ref.year - years)
+
+    # A patient is `min_age` years old once their birthday has passed on or
+    # before `ref - min_age years`; they stop being `max_age` the day after
+    # `ref - max_age years` turns into `ref - (max_age+1) years`.
+    latest_dob = _years_ago(min_age)  # youngest person still counted as min_age
+    earliest_dob = _years_ago(max_age + 1) if max_age is not None else None
+    if earliest_dob is not None:
+        # Exclusive lower bound becomes inclusive by adding one day.
+        from datetime import timedelta
+        earliest_dob = earliest_dob + timedelta(days=1)
+    return earliest_dob, latest_dob
 
 
 class SqlAlchemyAssessmentRepository(AssessmentRepository):
@@ -74,6 +113,52 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
     async def get_by_id(self, assessment_id: int) -> Optional[AssessmentEntity]:
         result = await self._session.get(AssessmentModel, assessment_id)
         return self._to_entity(result) if result else None
+
+    # ------------------------------------------------------------------
+    # Shared dashboard-filter helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _apply_dashboard_filters(
+        stmt,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
+    ):
+        """Apply the common dashboard filter set (doctor/disease/age/gender)
+        to a SELECT statement against AssessmentModel. Age/gender filters are
+        applied via a patient_id subquery, so this is safe to call regardless
+        of whether the statement already joins PatientModel.
+        """
+        conditions = []
+
+        if doctor_id is not None:
+            conditions.append(AssessmentModel.doctor_id == doctor_id)
+        if doctor_ids:
+            conditions.append(AssessmentModel.doctor_id.in_(doctor_ids))
+        if disease_ids:
+            conditions.append(AssessmentModel.disease_id.in_(disease_ids))
+
+        if gender or age_group:
+            patient_filters = []
+            if gender:
+                patient_filters.append(func.lower(PatientModel.gender) == gender.lower())
+            if age_group:
+                earliest_dob, latest_dob = _age_group_to_dob_range(age_group)
+                if earliest_dob is not None:
+                    patient_filters.append(PatientModel.date_of_birth >= earliest_dob)
+                if latest_dob is not None:
+                    patient_filters.append(PatientModel.date_of_birth <= latest_dob)
+            if patient_filters:
+                matching_patient_ids = select(PatientModel.id).where(and_(*patient_filters))
+                conditions.append(AssessmentModel.patient_id.in_(matching_patient_ids))
+
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
+        return stmt
 
     async def list(
         self,
@@ -171,7 +256,14 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
         return result.scalar_one()
 
     async def get_monthly_volume(
-        self, since: datetime, *, doctor_id: Optional[int] = None
+        self,
+        since: datetime,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[int, int, int]]:
         year_col = cast(extract("year", AssessmentModel.created_at), Integer)
         month_col = cast(extract("month", AssessmentModel.created_at), Integer)
@@ -181,8 +273,14 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
             .group_by(year_col, month_col)
             .order_by(year_col, month_col)
         )
-        if doctor_id is not None:
-            stmt = stmt.where(AssessmentModel.doctor_id == doctor_id)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
         result = await self._session.execute(stmt)
         return [(row.yr, row.mo, row.cnt) for row in result.all()]
 
@@ -192,6 +290,10 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
         to_date: Optional[datetime] = None,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[str, int]]:
         stmt = (
             select(DiseaseModel.name.label("disease_name"), func.count(AssessmentModel.id).label("cnt"))
@@ -203,8 +305,14 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
             stmt = stmt.where(AssessmentModel.created_at >= from_date)
         if to_date is not None:
             stmt = stmt.where(AssessmentModel.created_at <= to_date)
-        if doctor_id is not None:
-            stmt = stmt.where(AssessmentModel.doctor_id == doctor_id)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
         result = await self._session.execute(stmt)
         return [(row.disease_name, row.cnt) for row in result.all()]
 
@@ -214,6 +322,10 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
         end: datetime,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[int, int, int, int]]:
         year_col = cast(extract("year", AssessmentModel.created_at), Integer)
         month_col = cast(extract("month", AssessmentModel.created_at), Integer)
@@ -229,8 +341,14 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
             .group_by(year_col, month_col, day_col)
             .order_by(year_col, month_col, day_col)
         )
-        if doctor_id is not None:
-            stmt = stmt.where(AssessmentModel.doctor_id == doctor_id)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
         result = await self._session.execute(stmt)
         return [(r.yr, r.mo, r.dy, r.cnt) for r in result.all()]
 
@@ -242,6 +360,10 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
         disease_id: Optional[int] = None,
         *,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[str, int, int, int, int]]:
         stmt = (
             select(
@@ -262,10 +384,16 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
             filters.append(AssessmentModel.created_at <= to_date)
         if disease_id is not None:
             filters.append(AssessmentModel.disease_id == disease_id)
-        if doctor_id is not None:
-            filters.append(AssessmentModel.doctor_id == doctor_id)
         if filters:
             stmt = stmt.where(*filters)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
         result = await self._session.execute(stmt)
         return [
             (r.disease_name, r.total_count or 0, int(r.this_month_count or 0), int(r.submitted_count or 0), int(r.locked_count or 0))
@@ -277,16 +405,80 @@ class SqlAlchemyAssessmentRepository(AssessmentRepository):
         *,
         disease_id: Optional[int] = None,
         doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
     ) -> list[tuple[dict, Optional[object]]]:
         stmt = select(AssessmentModel.form_data, PatientModel.date_of_birth).join(
             PatientModel, AssessmentModel.patient_id == PatientModel.id
         )
         if disease_id is not None:
             stmt = stmt.where(AssessmentModel.disease_id == disease_id)
-        if doctor_id is not None:
-            stmt = stmt.where(AssessmentModel.doctor_id == doctor_id)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
         result = await self._session.execute(stmt)
         return [(row.form_data, row.date_of_birth) for row in result.all()]
+
+    async def count_filtered(
+        self,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+    ) -> int:
+        stmt = select(func.count(AssessmentModel.id))
+        if from_date is not None:
+            stmt = stmt.where(AssessmentModel.created_at >= from_date)
+        if to_date is not None:
+            stmt = stmt.where(AssessmentModel.created_at <= to_date)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
+    async def count_distinct_patients_filtered(
+        self,
+        *,
+        doctor_id: Optional[int] = None,
+        doctor_ids: Optional[list[int]] = None,
+        disease_ids: Optional[list[int]] = None,
+        age_group: Optional[str] = None,
+        gender: Optional[str] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+    ) -> int:
+        stmt = select(func.count(AssessmentModel.patient_id.distinct()))
+        if from_date is not None:
+            stmt = stmt.where(AssessmentModel.created_at >= from_date)
+        if to_date is not None:
+            stmt = stmt.where(AssessmentModel.created_at <= to_date)
+        stmt = self._apply_dashboard_filters(
+            stmt,
+            doctor_id=doctor_id,
+            doctor_ids=doctor_ids,
+            disease_ids=disease_ids,
+            age_group=age_group,
+            gender=gender,
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def export_assessments_with_details(
         self,

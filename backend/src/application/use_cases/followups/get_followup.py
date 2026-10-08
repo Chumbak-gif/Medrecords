@@ -33,6 +33,7 @@ class GetFollowupUseCase:
         followup = await self._followup_repo.get_by_id(query.followup_id)
         if followup is None:
             raise NotFoundError("Follow-up not found")
-        if followup.doctor_id != query.actor.id:
+        is_admin = query.actor is not None and query.actor.role in ("admin", "sys_admin")
+        if not is_admin and followup.doctor_id != query.actor.id:
             raise ForbiddenError("You do not have permission to access this follow-up")
         return followup

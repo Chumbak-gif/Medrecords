@@ -107,10 +107,26 @@ def _to_actor(user_model: UserModel) -> UserEntity:
 
 @router.get("/kpis", response_model=AdminKpis, summary="Admin dashboard KPI cards")
 async def get_admin_kpis(
+    from_date: Optional[date] = Query(None),
+    to_date: Optional[date] = Query(None),
+    disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> AdminKpis:
-    query = GetKpisQuery(actor=_to_actor(current_user))
+    resolved_disease_ids = disease_ids or ([disease_id] if disease_id is not None else None)
+    query = GetKpisQuery(
+        from_date=from_date,
+        to_date=to_date,
+        disease_ids=resolved_disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
+        actor=_to_actor(current_user),
+    )
     result = await use_case.get_kpis(query)
     return AdminKpis(
         total_assessments=result.total_assessments,
@@ -123,10 +139,22 @@ async def get_admin_kpis(
 
 @router.get("/monthly-volume", response_model=list[MonthlyVolumeItem], summary="Monthly assessment count for trailing 12 months")
 async def get_monthly_volume(
+    disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> list[MonthlyVolumeItem]:
-    query = GetMonthlyVolumeQuery(actor=_to_actor(current_user))
+    resolved_disease_ids = disease_ids or ([disease_id] if disease_id is not None else None)
+    query = GetMonthlyVolumeQuery(
+        disease_ids=resolved_disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
+        actor=_to_actor(current_user),
+    )
     items = await use_case.get_monthly_volume(query)
     return [MonthlyVolumeItem(month=item.month, count=item.count) for item in items]
 
@@ -135,12 +163,22 @@ async def get_monthly_volume(
 async def get_by_disease(
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
+    disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> list[DiseaseDistributionItem]:
+    resolved_disease_ids = disease_ids or ([disease_id] if disease_id is not None else None)
     query = GetByDiseaseQuery(
         from_date=from_date,
         to_date=to_date,
+        disease_ids=resolved_disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
         actor=_to_actor(current_user),
     )
     items = await use_case.get_by_disease(query)
@@ -151,12 +189,22 @@ async def get_by_disease(
 async def get_trend(
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
+    disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> list[TrendItem]:
+    resolved_disease_ids = disease_ids or ([disease_id] if disease_id is not None else None)
     query = GetTrendQuery(
         from_date=from_date,
         to_date=to_date,
+        disease_ids=resolved_disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
         actor=_to_actor(current_user),
     )
     items = await use_case.get_trend(query)
@@ -168,6 +216,10 @@ async def get_disease_summary(
     from_date: Optional[date] = Query(None),
     to_date: Optional[date] = Query(None),
     disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> list[DiseaseSummaryRow]:
@@ -175,6 +227,10 @@ async def get_disease_summary(
         from_date=from_date,
         to_date=to_date,
         disease_id=disease_id,
+        disease_ids=disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
         actor=_to_actor(current_user),
     )
     items = await use_case.get_disease_summary(query)
@@ -193,11 +249,19 @@ async def get_disease_summary(
 @router.get("/patient-statistics", response_model=PatientStatistics, summary="Numeric and categorical statistics from assessment form data")
 async def get_patient_statistics(
     disease_id: Optional[int] = Query(None),
+    disease_ids: Optional[list[int]] = Query(None),
+    doctor_ids: Optional[list[int]] = Query(None),
+    age_group: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
     current_user: UserModel = Depends(role_required(_ANALYTICS_ROLES)),
     use_case: GetAnalyticsUseCase = Depends(get_analytics_use_case),
 ) -> PatientStatistics:
     query = GetPatientStatisticsQuery(
         disease_id=disease_id,
+        disease_ids=disease_ids,
+        doctor_ids=doctor_ids,
+        age_group=age_group,
+        gender=gender,
         actor=_to_actor(current_user),
     )
     result = await use_case.get_patient_statistics(query)

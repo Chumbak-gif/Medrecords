@@ -17,6 +17,10 @@ class ListFollowupsQuery:
     status: Optional[str] = None
     patient_id: Optional[int] = None
     actor: Optional[UserEntity] = None
+    # When False, the actor's own id is NOT used to scope results (e.g. an
+    # admin/sys_admin viewing a specific patient's follow-ups across all
+    # doctors). Doctors always get their own-id scoping regardless of this flag.
+    scope_to_actor: bool = True
 
 
 @dataclass
@@ -37,19 +41,23 @@ class ListFollowupsUseCase:
         self._followup_repo = followup_repo
 
     async def execute(self, query: ListFollowupsQuery) -> PaginatedResult:
-        """Retrieve paginated followups for the doctor."""
+        """Retrieve paginated followups, scoped to the doctor unless the
+        actor is an admin/sys_admin viewing a specific patient's record."""
         offset = (query.page - 1) * query.page_size
+
+        is_doctor = query.actor is not None and query.actor.role == "doctor"
+        doctor_id = query.actor.id if (is_doctor or query.scope_to_actor) and query.actor else None
 
         followups = await self._followup_repo.list(
             offset=offset,
             limit=query.page_size,
-            doctor_id=query.actor.id,
+            doctor_id=doctor_id,
             patient_id=query.patient_id,
             status=query.status,
         )
 
         total = await self._followup_repo.count(
-            doctor_id=query.actor.id,
+            doctor_id=doctor_id,
             patient_id=query.patient_id,
             status=query.status,
         )

@@ -17,7 +17,7 @@
  *  GET  /diseases/{id}/sub-diseases
  *  GET  /templates/disease/{id}/active
  *  GET  /patients/{id}
- *  GET  /patients/?page=1&page_size=100
+ *  GET  /patients/?page=1&page_size=100&scope=all  (any doctor may select a walk-in)
  *  POST /patients/                       (register new patient)
  *  GET  /assessments/{id}
  *  POST /assessments/                    (create draft)
@@ -1210,7 +1210,9 @@ export function AssessmentFormPage() {
     try {
       const res = await apiClient.get<PaginatedResponse<{ id: number; first_name: string; last_name: string; patient_uid: string }>>(
         '/patients/',
-        { params: { page: 1, page_size: 100 } },
+        // scope=all — any doctor may select a walk-in patient for a new
+        // assessment, regardless of who originally registered them.
+        { params: { page: 1, page_size: 100, scope: 'all' } },
       );
       setPatientSearchResults(
         (res.data.items ?? []).map((p) => ({ id: p.id, displayLabel: `${p.first_name} ${p.last_name} — ${p.patient_uid}` })),

@@ -19,6 +19,15 @@ class Settings(BaseSettings):
 
     # App
     api_prefix: str = "/api/v1"
+    environment: str = "development"
+
+    # Seed script credentials (seed.py) — override via .env or real
+    # environment variables outside local dev. Fixed defaults below are for
+    # local development convenience only.
+    seed_admin_password: str = "Admin@1234"
+    seed_doctor_password: str = "Doctor@1234"
+    seed_adminuser_password: str = "Admin@1234"
+    seed_pharma_password: str = "Pharma@1234"
 
     model_config = SettingsConfigDict(
         env_file=".env",
