@@ -54,6 +54,7 @@ class UserResponse(BaseModel):
     role: str
     specialty: Optional[str] = None
     is_active: bool
+    must_change_password: bool
     created_at: datetime
     updated_at: datetime
 

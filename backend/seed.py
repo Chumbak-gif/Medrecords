@@ -106,9 +106,9 @@ async def seed_data() -> None:
                 text(
                     """
                     INSERT INTO users
-                        (username, email, full_name, hashed_password, role, is_active)
+                        (username, email, full_name, hashed_password, role, is_active, must_change_password)
                     VALUES
-                        (:username, :email, :full_name, :hashed_password, :role, TRUE)
+                        (:username, :email, :full_name, :hashed_password, :role, TRUE, FALSE)
                     ON CONFLICT (username) DO NOTHING
                     """
                 ),
@@ -153,9 +153,9 @@ async def seed_data() -> None:
                     text(
                         """
                         INSERT INTO users
-                            (username, email, full_name, hashed_password, role, is_active)
+                            (username, email, full_name, hashed_password, role, is_active, must_change_password)
                         VALUES
-                            (:username, :email, :full_name, :hashed_password, :role, TRUE)
+                            (:username, :email, :full_name, :hashed_password, :role, TRUE, FALSE)
                         ON CONFLICT (username) DO NOTHING
                         """
                     ),

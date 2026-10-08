@@ -142,6 +142,7 @@ class UserService:
                 role=role,
                 specialty=specialty,
                 is_active=True,
+                must_change_password=True,
             )
             user = await self._user_repo.add(user)
 
@@ -276,6 +277,7 @@ class UserService:
                 raise ValueError("User not found")
 
             user.hashed_password = self._password_hasher.hash(new_password)
+            user.must_change_password = True
             await self._user_repo.update(user)
 
             await self._audit_repo.add(
@@ -286,7 +288,46 @@ class UserService:
                     actor_role=actor.role,
                     entity_type="user",
                     entity_id=user.id,
-                    description=f"Password reset for user '{user.username}'",
+                    description=f"Password reset for user '{user.username}' — user must change password on next login",
+                )
+            )
+
+            await self._uow.commit()
+
+    async def change_own_password(
+        self, *, user_id: int, current_password: str, new_password: str
+    ) -> None:
+        """Self-service password change — verifies current password, clears
+        the must_change_password flag.
+
+        Raises:
+            ValueError: If user not found, current password is wrong, or the
+                new password matches the current one.
+        """
+        async with self._uow:
+            user = await self._user_repo.get_by_id(user_id)
+            if user is None:
+                raise ValueError("User not found")
+
+            if not self._password_hasher.verify(current_password, user.hashed_password):
+                raise ValueError("Current password is incorrect")
+
+            if current_password == new_password:
+                raise ValueError("New password must be different from the current password")
+
+            user.hashed_password = self._password_hasher.hash(new_password)
+            user.must_change_password = False
+            await self._user_repo.update(user)
+
+            await self._audit_repo.add(
+                AuditLogEntity(
+                    event_type="user_password_changed",
+                    actor_id=user.id,
+                    actor_username=user.username,
+                    actor_role=user.role,
+                    entity_type="user",
+                    entity_id=user.id,
+                    description="User changed their own password",
                 )
             )
 

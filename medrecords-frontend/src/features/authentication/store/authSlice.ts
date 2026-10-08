@@ -133,6 +133,7 @@ export const login = createAsyncThunk<
       role: tokenResponse.role,
       specialty: null,
       isActive: true,
+      mustChangePassword: tokenResponse.must_change_password,
     };
 
     // Persist to sessionStorage so a reload keeps the user logged in

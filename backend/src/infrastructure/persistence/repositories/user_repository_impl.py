@@ -33,6 +33,7 @@ class SqlAlchemyUserRepository(UserRepository):
             role=model.role,
             specialty=model.specialty,
             is_active=model.is_active,
+            must_change_password=model.must_change_password,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -48,6 +49,7 @@ class SqlAlchemyUserRepository(UserRepository):
             role=entity.role,
             specialty=entity.specialty,
             is_active=entity.is_active,
+            must_change_password=entity.must_change_password,
         )
 
     # ------------------------------------------------------------------
@@ -137,6 +139,7 @@ class SqlAlchemyUserRepository(UserRepository):
         model.role = user.role
         model.specialty = user.specialty
         model.is_active = user.is_active
+        model.must_change_password = user.must_change_password
         await self._session.flush()
         await self._session.refresh(model)
         return self._to_entity(model)

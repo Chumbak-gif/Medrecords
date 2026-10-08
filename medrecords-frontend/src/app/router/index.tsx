@@ -26,6 +26,7 @@ function lazyRoute(importFn: () => Promise<{ default: ComponentType }>) {
 
 // Lazy pages
 const LoginPage = lazyRoute(() => import('@/features/authentication/pages/LoginPage'));
+const ChangePasswordPage = lazyRoute(() => import('@/features/authentication/pages/ChangePasswordPage'));
 const DashboardPage = lazyRoute(() => import('@/features/dashboard/pages/DashboardPage'));
 const StatisticsPage = lazyRoute(() => import('@/features/statistics/pages/StatisticsPage'));
 const PatientsListPage = lazyRoute(() => import('@/features/patient-management/pages/PatientsListPage'));
@@ -46,6 +47,7 @@ const PharmaAnalyticsPage = lazyRoute(() => import('@/features/dashboard/pages/P
 export const router = createBrowserRouter([
   // Public routes
   { path: '/login', element: <LoginPage /> },
+  { path: '/change-password', element: <ChangePasswordPage /> },
 
   // Admin routes
   {

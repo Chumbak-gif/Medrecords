@@ -15,6 +15,7 @@ export interface UserProfile {
   role: UserRole;
   specialty: string | null;
   isActive: boolean;
+  mustChangePassword: boolean;
 }
 
 export interface AuthState {
@@ -41,4 +42,5 @@ export interface TokenResponse {
   role: UserRole;
   user_id: number;
   full_name: string;
+  must_change_password: boolean;
 }

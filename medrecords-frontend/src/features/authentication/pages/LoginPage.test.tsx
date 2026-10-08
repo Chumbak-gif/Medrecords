@@ -141,7 +141,7 @@ describe('LoginPage', () => {
   it('shows loading state while login is in progress', () => {
     renderLoginPage({ isLoading: true });
 
-    expect(screen.getByRole('button')).toHaveTextContent('Signing in...');
+    expect(screen.getByRole('button', { name: /signing in/i })).toHaveTextContent('Signing in...');
     expect(screen.getByLabelText('Username')).toBeDisabled();
     expect(screen.getByLabelText('Password')).toBeDisabled();
   });

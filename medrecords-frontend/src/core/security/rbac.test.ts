@@ -12,6 +12,7 @@ function makeUser(role: string): UserProfile {
     role: role as UserProfile['role'],
     specialty: null,
     isActive: true,
+    mustChangePassword: false,
   };
 }
 

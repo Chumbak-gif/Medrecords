@@ -12,7 +12,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.audit_log import AuditLog
 from app.models.user import User
-from app.schemas.auth import TokenResponse, UserProfile
+from app.schemas.auth import ChangePasswordRequest, TokenResponse, UserProfile
 
 router = APIRouter(tags=["Authentication"])
 
@@ -25,6 +25,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def _verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
+
+def _hash_password(plain: str) -> str:
+    return pwd_context.hash(plain)
 
 
 def _create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -153,6 +157,7 @@ async def login(
         role=user.role,
         user_id=user.id,
         full_name=user.full_name,
+        must_change_password=user.must_change_password,
     )
 
 
@@ -163,6 +168,48 @@ async def login(
 @router.get("/me", response_model=UserProfile, summary="Get current user profile")
 async def get_me(current_user: User = Depends(get_current_user)) -> UserProfile:
     return UserProfile.model_validate(current_user)
+
+
+# ---------------------------------------------------------------------------
+# POST /change-password
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/change-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Change own password (clears must_change_password flag)",
+)
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    if not _verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password",
+        )
+
+    current_user.hashed_password = _hash_password(payload.new_password)
+    current_user.must_change_password = False
+
+    ip_address: Optional[str] = request.client.host if request.client else None
+    await _write_audit_log(
+        db,
+        event_type="user_password_changed",
+        actor_username=current_user.username,
+        actor_role=current_user.role,
+        actor_id=current_user.id,
+        description="User changed their own password",
+        ip_address=ip_address,
+    )
 
 
 # ---------------------------------------------------------------------------

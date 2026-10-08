@@ -97,6 +97,7 @@ class UserResponse(BaseModel):
     role: str
     specialty: Optional[str] = None
     is_active: bool
+    must_change_password: bool
     created_at: datetime
     updated_at: datetime
 
@@ -129,6 +130,7 @@ def _to_actor(user_model: UserModel) -> UserEntity:
         role=user_model.role,
         specialty=user_model.specialty,
         is_active=user_model.is_active,
+        must_change_password=user_model.must_change_password,
         created_at=user_model.created_at,
         updated_at=user_model.updated_at,
     )

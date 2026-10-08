@@ -17,5 +17,6 @@ class UserEntity:
     role: str = ""
     specialty: Optional[str] = None
     is_active: bool = True
+    must_change_password: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

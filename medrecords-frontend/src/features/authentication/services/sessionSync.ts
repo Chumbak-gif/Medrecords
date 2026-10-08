@@ -133,6 +133,7 @@ export async function attemptSilentRefresh(): Promise<{
       role: tokenResponse.role,
       specialty: null,
       isActive: true,
+      mustChangePassword: tokenResponse.must_change_password,
     };
 
     return { token: newToken, user };

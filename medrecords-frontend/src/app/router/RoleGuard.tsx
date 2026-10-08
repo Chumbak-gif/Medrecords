@@ -23,6 +23,11 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
     return <Navigate to={`/login?returnUrl=${returnUrl}`} replace />;
   }
 
+  // Force a password change before granting access to any protected route.
+  if (user.mustChangePassword) {
+    return <Navigate to="/change-password" replace />;
+  }
+
   if (!roles.includes(user.role)) {
     return <Navigate to="/login" replace />;
   }

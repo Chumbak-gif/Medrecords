@@ -46,6 +46,7 @@ const doctorUser: UserProfile = {
   role: 'doctor',
   specialty: 'General',
   isActive: true,
+  mustChangePassword: false,
 };
 
 const adminUser: UserProfile = {
@@ -56,6 +57,7 @@ const adminUser: UserProfile = {
   role: 'admin',
   specialty: null,
   isActive: true,
+  mustChangePassword: false,
 };
 
 const receptionistUser: UserProfile = {
@@ -66,6 +68,7 @@ const receptionistUser: UserProfile = {
   role: 'receptionist',
   specialty: null,
   isActive: true,
+  mustChangePassword: false,
 };
 
 const authenticatedState = (user: UserProfile): AuthState => ({

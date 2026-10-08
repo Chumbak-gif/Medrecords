@@ -152,6 +152,7 @@ async def create_user(
         role=payload.role,
         specialty=payload.specialty,
         is_active=True,
+        must_change_password=True,
     )
     db.add(user)
     await db.flush()
@@ -292,6 +293,7 @@ async def reset_password(
     user = await _get_user_or_404(id, db)
 
     user.hashed_password = pwd_context.hash(payload.password)
+    user.must_change_password = True
 
     await _audit(
         db,
@@ -299,5 +301,5 @@ async def reset_password(
         actor=current_user,
         entity_type="user",
         entity_id=user.id,
-        description=f"Password reset for user '{user.username}'",
+        description=f"Password reset for user '{user.username}' — user must change password on next login",
     )

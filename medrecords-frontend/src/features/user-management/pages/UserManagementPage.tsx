@@ -400,8 +400,11 @@ export function UserManagementPage() {
               )}
               {!editingUser && (
                 <div className="form-field-group" style={{ marginTop: 16 }}>
-                  <label className="label">Password <span style={{ color: 'var(--color-error)' }}>*</span></label>
+                  <label className="label">Temporary Password <span style={{ color: 'var(--color-error)' }}>*</span></label>
                   <input type="password" className="form-control" placeholder="Min 8 chars, uppercase, digit, special char" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} style={{ width: '100%' }} autoComplete="new-password" />
+                  <span style={{ fontSize: 11, color: 'var(--color-neutral-500)', marginTop: 4, display: 'block' }}>
+                    The user will be required to change this password on first login.
+                  </span>
                 </div>
               )}
             </div>
@@ -426,6 +429,9 @@ export function UserManagementPage() {
             <div className="dialog-body">
               <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-neutral-600)' }}>
                 Setting new password for <strong>{resetTarget.full_name}</strong> (<span style={{ fontFamily: 'monospace' }}>{resetTarget.username}</span>)
+              </p>
+              <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--color-neutral-500)' }}>
+                The user will be required to change this password the next time they log in.
               </p>
               <div className="form-field-group">
                 <label className="label">New Password <span style={{ color: 'var(--color-error)' }}>*</span></label>

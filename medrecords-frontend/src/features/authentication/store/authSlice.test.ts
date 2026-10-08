@@ -52,6 +52,7 @@ const mockUser: UserProfile = {
   role: 'doctor',
   specialty: 'Cardiology',
   isActive: true,
+  mustChangePassword: false,
 };
 
 describe('authSlice', () => {

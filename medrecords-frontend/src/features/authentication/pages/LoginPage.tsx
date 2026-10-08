@@ -24,11 +24,16 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState({ username: false, password: false });
+  const [showPassword, setShowPassword] = useState(false);
 
-  // If already authenticated, redirect to role dashboard
+  // If already authenticated, redirect to role dashboard (or force password change)
   useEffect(() => {
     if (isAuthenticated && user) {
-      navigate(roleDashboard[user.role] ?? '/admin/analytics', { replace: true });
+      if (user.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate(roleDashboard[user.role] ?? '/admin/analytics', { replace: true });
+      }
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -44,8 +49,12 @@ export function LoginPage() {
 
     const result = await dispatch(login({ username: username.trim(), password }));
     if (login.fulfilled.match(result)) {
-      const role = result.payload.user.role;
-      navigate(roleDashboard[role] ?? '/admin/analytics', { replace: true });
+      const { role, mustChangePassword } = result.payload.user;
+      if (mustChangePassword) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate(roleDashboard[role] ?? '/admin/analytics', { replace: true });
+      }
     }
   }
 
@@ -82,17 +91,30 @@ export function LoginPage() {
             <label htmlFor="password" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-neutral-800)' }}>
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              className={`form-control ${touched.password && !password.trim() ? 'form-control--error' : ''}`}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, password: true }))}
-              disabled={isLoading}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className={`form-control ${touched.password && !password.trim() ? 'form-control--error' : ''}`}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, password: true }))}
+                disabled={isLoading}
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((v) => !v)}
+                disabled={isLoading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                <i className={showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'} />
+              </button>
+            </div>
             {touched.password && !password.trim() && (
               <span className="form-error">Password is required</span>
             )}
@@ -181,6 +203,28 @@ export function LoginPage() {
         }
         .form-control--error:focus {
           box-shadow: 0 0 0 3px var(--color-error-bg);
+        }
+        .password-toggle-btn {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-neutral-500);
+          cursor: pointer;
+          line-height: 1;
+        }
+        .password-toggle-btn:hover {
+          color: var(--color-neutral-700);
+        }
+        .password-toggle-btn:disabled {
+          cursor: default;
+          opacity: 0.5;
         }
       `}</style>
     </div>

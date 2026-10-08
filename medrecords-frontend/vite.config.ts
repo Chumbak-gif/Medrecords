@@ -19,7 +19,7 @@ export default defineConfig({
     // way without needing a separate dev-only config.
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
     },
