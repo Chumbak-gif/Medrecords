@@ -71,19 +71,8 @@ class NumericStatRow(BaseModel):
     range_max: float
 
 
-class CategoryCount(BaseModel):
-    label: str
-    count: int
-
-
-class CategoricalStatRow(BaseModel):
-    field: str
-    categories: list[CategoryCount]
-
-
 class PatientStatistics(BaseModel):
     numeric_stats: list[NumericStatRow]
-    categorical_stats: list[CategoricalStatRow]
 
 
 # --- Helpers ---
@@ -275,12 +264,5 @@ async def get_patient_statistics(
                 range_max=row.range_max,
             )
             for row in result.numeric_stats
-        ],
-        categorical_stats=[
-            CategoricalStatRow(
-                field=row.field,
-                categories=[CategoryCount(label=c.label, count=c.count) for c in row.categories],
-            )
-            for row in result.categorical_stats
         ],
     )

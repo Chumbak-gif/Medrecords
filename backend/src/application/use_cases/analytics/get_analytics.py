@@ -134,27 +134,10 @@ class NumericStatRow:
 
 
 @dataclass
-class CategoryCount:
-    """Single category label + count."""
-
-    label: str = ""
-    count: int = 0
-
-
-@dataclass
-class CategoricalStatRow:
-    """Categorical field distribution."""
-
-    field: str = ""
-    categories: list[CategoryCount] = dataclasses_field(default_factory=list)
-
-
-@dataclass
 class PatientStatisticsResult:
-    """Numeric + categorical statistics across assessment form data."""
+    """Numeric statistics across assessment form data."""
 
     numeric_stats: list[NumericStatRow] = dataclasses_field(default_factory=list)
-    categorical_stats: list[CategoricalStatRow] = dataclasses_field(default_factory=list)
 
 
 @dataclass
@@ -376,14 +359,12 @@ class GetAnalyticsUseCase:
         ]
 
     async def get_patient_statistics(self, query: GetPatientStatisticsQuery) -> PatientStatisticsResult:
-        """Compute numeric + categorical statistics from assessment form data.
-
-        Numeric fields: mean, median, range. Categorical/text fields: category
-        counts. Also computes Age statistics from linked patients. Scoped to
-        the doctor's own assessments when the actor is a doctor.
+        """Compute numeric statistics (mean / median / range) from assessment
+        form data, including Age computed from linked patients. Scoped to the
+        doctor's own assessments when the actor is a doctor.
         """
         import statistics as stats_mod
-        from collections import Counter, defaultdict
+        from collections import defaultdict
         from datetime import date as date_cls
 
         doctor_id = self._doctor_scope(query.actor)
@@ -397,12 +378,11 @@ class GetAnalyticsUseCase:
         )
 
         if not rows:
-            return PatientStatisticsResult(numeric_stats=[], categorical_stats=[])
+            return PatientStatisticsResult(numeric_stats=[])
 
         today = date_cls.today()
         ages: list[float] = []
         numeric_fields: dict[str, list[float]] = defaultdict(list)
-        categorical_fields: dict[str, list[str]] = defaultdict(list)
 
         for form_data, dob in rows:
             if dob:
@@ -417,7 +397,7 @@ class GetAnalyticsUseCase:
                 try:
                     numeric_fields[key].append(float(value))
                 except (ValueError, TypeError):
-                    categorical_fields[key].append(str(value))
+                    continue
 
         numeric_stats: list[NumericStatRow] = []
 
@@ -445,14 +425,4 @@ class GetAnalyticsUseCase:
                 )
             )
 
-        categorical_stats: list[CategoricalStatRow] = []
-        for field_name, values in sorted(categorical_fields.items()):
-            counter = Counter(values)
-            categories = [
-                CategoryCount(label=label, count=count)
-                for label, count in counter.most_common(20)
-            ]
-            if categories:
-                categorical_stats.append(CategoricalStatRow(field=field_name, categories=categories))
-
-        return PatientStatisticsResult(numeric_stats=numeric_stats, categorical_stats=categorical_stats)
+        return PatientStatisticsResult(numeric_stats=numeric_stats)
